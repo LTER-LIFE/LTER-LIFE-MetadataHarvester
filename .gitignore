@@ -1,35 +1,27 @@
-# Environment variables
+# --- secrets / local config ---
 .env
+.env.*
+!.env.example
+cookies.txt
 
-# Python
+# --- python ---
+.venv/
+venv/
 __pycache__/
 *.pyc
-*.pyo
 
-# Virtual env
-.venv/
-
-# IDE
-.idea/
-.vscode/
+# --- editor / OS ---
 .DS_Store
+.idea/
 
-# Generated data
+# --- generated harvest output ---
 jsonld/
 jsonld_filtered/
 jsonld_records.zip
 jsonld_records_filtered.zip
+*.csv
 
-# Temp files
-*.log
-cookies.txt
-
-# CSV outputs
-*_results.csv
-all_portal_protocols*.csv
-detected_protocols.csv
-api-op-withsecrets.py
-
-# Local-only dev files
+# --- local dev / scratch API variants (not for the repo) ---
 api-dev.py
 api-op.py
+api-op-withsecrets.py

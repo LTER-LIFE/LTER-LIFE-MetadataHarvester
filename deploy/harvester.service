@@ -1,0 +1,28 @@
+# systemd unit for the LTER-LIFE metadata harvester web app.
+#
+# Install on the VM:
+#   sudo cp deploy/harvester.service /etc/systemd/system/harvester.service
+#   # edit User / WorkingDirectory / paths below if your layout differs
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now harvester
+#   systemctl status harvester
+#   journalctl -u harvester -f          # live logs
+
+[Unit]
+Description=LTER-LIFE metadata harvester (FastAPI/uvicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nafiseh
+WorkingDirectory=/home/nafiseh/harvester
+EnvironmentFile=/home/nafiseh/harvester/.env
+ExecStart=/home/nafiseh/harvester/.venv/bin/uvicorn api:app --host 0.0.0.0 --port 8000 --workers 1
+Restart=on-failure
+RestartSec=3
+# harvest jobs run in background threads inside the process; give them time to finish on stop
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

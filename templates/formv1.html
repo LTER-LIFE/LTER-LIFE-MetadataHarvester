@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Metadata Harvester</title>
+
+  <style>
+    :root{
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --shadow: 0 10px 30px rgba(0,0,0,0.06);
+      --radius: 14px;
+
+      /* header theme */
+      --header-bg: #0b2a4a;
+      --header-text: #ffffff;
+      --header-muted: rgba(255,255,255,0.82);
+    }
+
+    body{
+      font-family: Arial, sans-serif;
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    /* ===== Header ===== */
+    .topbar{
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--header-bg);
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .topbar-inner{
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .brand{
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 260px;
+    }
+
+    .brand h1{
+      font-size: 18px;
+      margin: 0;
+      letter-spacing: 0.2px;
+      color: var(--header-text);
+    }
+
+    .brand p{
+      margin: 0;
+      font-size: 13px;
+      color: var(--header-muted);
+      line-height: 1.4;
+      max-width: 640px;
+    }
+
+    .header-right{
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .logos{
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .logo{
+      height: 70px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+      background: rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 6px 10px;
+    }
+
+    .header-links{
+      font-size: 13px;
+      color: var(--header-muted);
+      text-align: right;
+    }
+
+    .header-links a{
+      color: var(--header-text);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    /* ===== Layout ===== */
+    .container{
+      max-width: 1100px;
+      margin: 26px auto;
+      padding: 0 22px 40px;
+    }
+
+    .grid{
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+      .header-right{ align-items: flex-start; }
+      .header-links{ text-align: left; }
+      .logos{ justify-content: flex-start; }
+    }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .card h2{
+      margin: 0 0 14px 0;
+      font-size: 16px;
+    }
+
+    .hint{
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: -8px;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    /* ===== Form ===== */
+    label{
+      display: block;
+      margin-top: 12px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    input, select, textarea{
+      width: 100%;
+      padding: 10px 12px;
+      margin-top: 6px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    textarea{
+      min-height: 96px;
+      resize: vertical;
+      line-height: 1.4;
+    }
+
+    .row{
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .row > .col{
+      flex: 1;
+      min-width: 220px;
+    }
+
+    .section{
+      border: 1px solid var(--border);
+      padding: 14px;
+      margin-top: 14px;
+      border-radius: 12px;
+      background: #fbfbfd;
+    }
+
+    .actions{
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    button{
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #111827;
+      background: #fff;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .btn-primary{
+      background: #111827;
+      color: #fff;
+      border-color: #111827;
+    }
+
+    .btn-danger{
+      border-color: #b91c1c;
+      color: #b91c1c;
+      background: #fff;
+    }
+
+    .btn-secondary{
+      border-color: var(--border);
+      background: #fff;
+      color: #111827;
+    }
+
+    /* ===== Alerts ===== */
+    .alert{
+      padding: 14px;
+      margin-top: 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+
+    .alert-success{
+      background-color: #ecfdf3;
+      border-color: #86efac;
+    }
+
+    pre{
+      background: #f3f4f6;
+      border: 1px solid var(--border);
+      padding: 12px;
+      border-radius: 12px;
+      white-space: pre-wrap;
+      max-height: 420px;
+      overflow-y: auto;
+      font-size: 12px;
+    }
+
+    .stat{
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+
+    .badge{
+      display:inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
+      font-weight: 700;
+      color: #111827;
+      font-size: 12px;
+    }
+
+    /* ===== Filtering switch ===== */
+    .filter-switch{
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      padding: 4px;
+      gap: 4px;
+      margin-top: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .filter-switch input[type="radio"]{
+      display: none;
+    }
+
+    .filter-switch label{
+      margin: 0;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+      min-width: 170px;
+      text-align: center;
+      box-sizing: border-box;
+    }
+
+    .filter-switch input[type="radio"]:checked + label{
+      background: #111827;
+      color: #fff;
+      border-color: #111827;
+    }
+
+    .filter-panel{
+      margin-top: 6px;
+    }
+
+    .syntax-hint{
+      margin-top: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .syntax-hint code{
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #111827;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <h1>LTER-LIFE Metadata Harvester</h1>
+        <p>Harvest metadata from supported endpoints and publish the results to the LTER-LIFE catalogue.</p>
+      </div>
+
+      <div class="header-right">
+        <div class="logos">
+          <img src="/static/img/LTER-LIFE-logo.svg" class="logo" alt="Project logo">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="grid">
+
+      <section class="card">
+        <h2>Harvest</h2>
+        <div class="hint">Enter a portal URL and optional date range. Results can be exported as JSON-LD.</div>
+
+        <form method="POST" action="/run">
+          <label>Node Name</label>
+          <input type="text" name="node_name" value="{{ node_name or '' }}" required placeholder="e.g., RIVM, NIOZ, CBS">
+
+          <label>URL</label>
+          <input type="text" name="url" value="{{ url or '' }}" required placeholder="https://...">
+
+          <div class="section">
+            <h3 style="margin:0 0 10px 0; font-size:14px;">Time Interval</h3>
+            <div class="row">
+              <div class="col">
+                <label style="margin-top:0;">From</label>
+                <input type="date" name="from_date" value="{{ from_date or '' }}">
+              </div>
+              <div class="col">
+                <label style="margin-top:0;">Until</label>
+                <input type="date" name="until_date" value="{{ until_date or '' }}">
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3 style="margin:0 0 10px 0; font-size:14px;">Filtering</h3>
+            <div class="hint" style="margin-top:0; margin-bottom:8px;">
+              Choose one filtering method.
+            </div>
+
+            <div class="filter-switch">
+              <input
+                type="radio"
+                id="filter-mode-basic"
+                name="filter_mode"
+                value="basic"
+                {% if filter_mode != "advanced" %}checked{% endif %}
+                onchange="toggleFilterMode()"
+              >
+              <label for="filter-mode-basic">Include / Exclude</label>
+
+              <input
+                type="radio"
+                id="filter-mode-advanced"
+                name="filter_mode"
+                value="advanced"
+                {% if filter_mode == "advanced" %}checked{% endif %}
+                onchange="toggleFilterMode()"
+              >
+              <label for="filter-mode-advanced">Advanced query</label>
+            </div>
+
+            <div id="basic-filter-fields" class="filter-panel">
+              <label style="margin-top:0;">Include terms</label>
+              <textarea
+                name="include_terms"
+                placeholder="e.g. Netherlands, Ecology"
+              >{{ include_terms or '' }}</textarea>
+
+              <label>Exclude terms</label>
+              <textarea
+                name="exclude_terms"
+                placeholder="e.g. Clinical, Economics"
+              >{{ exclude_terms or '' }}</textarea>
+            </div>
+
+            <div id="advanced-filter-fields" class="filter-panel" style="display:none;">
+              <label style="margin-top:0;">Advanced query</label>
+              <textarea
+                name="filter_query"
+                placeholder='e.g. (Wadden OR Veluwe) AND Biodiversity NOT Clinical'
+              >{{ filter_query or '' }}</textarea>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3 style="margin:0 0 10px 0; font-size:14px;">Export Format</h3>
+
+            <label for="export_format" style="margin-top:0;">Choose export format</label>
+            <select name="export_format" id="export_format">
+              <option value="jsonld"
+                {% if export_format == "jsonld" or export_format is not defined %}
+                  selected
+                {% endif %}
+              >
+                JSON-LD
+              </option>
+            </select>
+          </div>
+
+          <div class="actions">
+            <button class="btn-primary" type="submit">Run Harvester</button>
+
+            {% if record_count and record_count > 0 and export_format == "jsonld" %}
+              <button class="btn-secondary" type="submit" formaction="/download/jsonld" formmethod="GET">
+                Download JSON-LD (ZIP)
+              </button>
+            {% endif %}
+          </div>
+
+          {% if record_count is not none %}
+          <div class="stat">
+            <span class="badge">Records: {{ record_count }}</span>
+            {% if url %}<span>Last URL: <strong>{{ url }}</strong></span>{% endif %}
+          </div>
+          {% endif %}
+        </form>
+      </section>
+
+      <aside class="card">
+        <h2>Publish</h2>
+        <div class="hint">Push the latest exported ZIP into GeoNetwork.</div>
+
+        {% if record_count and record_count > 0 and export_format == "jsonld" %}
+          <form method="POST" action="/push-to-catalog">
+            <button class="btn-danger" type="submit">Push to GeoNetwork</button>
+          </form>
+        {% else %}
+          <div class="alert">
+            <div class="hint" style="margin:0;">
+              Run the harvester first to generate the JSON-LD ZIP, then you can push to GeoNetwork.
+            </div>
+          </div>
+        {% endif %}
+
+        {% if push_report %}
+          <div class="alert alert-success">
+            <h3 style="margin:0 0 10px 0; font-size:14px;">GeoNetwork Import Report</h3>
+            <pre>{{ push_report | tojson(indent=2) }}</pre>
+          </div>
+        {% endif %}
+      </aside>
+
+    </div>
+
+    {% if progress_messages %}
+      <section class="card" style="margin-top:18px;">
+        <h2>Processing Summary</h2>
+        <div class="hint">Pipeline steps completed during the latest run.</div>
+
+        <div class="alert alert-success">
+          {% for msg in progress_messages %}
+            <div style="margin-bottom:8px;">• {{ msg }}</div>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    {% if records is defined and records %}
+      <section class="card" style="margin-top:18px;">
+        <h2>Harvested Records</h2>
+        <div class="hint">Raw preview (JSON). You can replace this with a table later if you want.</div>
+        <pre>{{ records | tojson(indent=2) }}</pre>
+      </section>
+    {% endif %}
+
+  </main>
+
+  <script>
+    function toggleFilterMode() {
+      const selected = document.querySelector('input[name="filter_mode"]:checked').value;
+      const basicFields = document.getElementById("basic-filter-fields");
+      const advancedFields = document.getElementById("advanced-filter-fields");
+
+      if (selected === "basic") {
+        basicFields.style.display = "block";
+        advancedFields.style.display = "none";
+      } else {
+        basicFields.style.display = "none";
+        advancedFields.style.display = "block";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      toggleFilterMode();
+    });
+  </script>
+</body>
+</html>

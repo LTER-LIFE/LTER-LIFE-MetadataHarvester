@@ -1,0 +1,13 @@
+# LTER-LIFE metadata harvester — runtime dependencies
+# Install:  python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+
+fastapi==0.124.1
+uvicorn==0.38.0
+python-multipart==0.0.20      # required for FastAPI Form() handling in /run
+jinja2==3.1.6
+python-dotenv==1.2.1
+requests==2.32.5
+
+Sickle==0.7.0                 # OAI-PMH  (DANS, Dataverse)
+OWSLib==0.34.1                # CSW      (Datahuis Waddenzee, RIVM)
+lxml==6.0.2

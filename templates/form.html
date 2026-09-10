@@ -14,11 +14,29 @@
       --border: #e5e7eb;
       --shadow: 0 10px 30px rgba(0,0,0,0.06);
       --radius: 14px;
-
-      /* header theme */
-      --header-bg: #0b2a4a; /* professional navy */
+      --header-bg: #0b2a4a;
       --header-text: #ffffff;
       --header-muted: rgba(255,255,255,0.82);
+
+      --waiting-bg: #f9fafb;
+      --waiting-border: #d1d5db;
+      --waiting-text: #6b7280;
+
+      --running-bg: #eff6ff;
+      --running-border: #93c5fd;
+      --running-text: #1d4ed8;
+
+      --done-bg: #ecfdf3;
+      --done-border: #86efac;
+      --done-text: #15803d;
+
+      --error-bg: #fef2f2;
+      --error-border: #fca5a5;
+      --error-text: #b91c1c;
+    }
+
+    *{
+      box-sizing: border-box;
     }
 
     body{
@@ -28,7 +46,6 @@
       background: var(--bg);
     }
 
-    /* ===== Header ===== */
     .topbar{
       position: sticky;
       top: 0;
@@ -86,7 +103,7 @@
     }
 
     .logo{
-      height: 70px; /* bigger logos */
+      height: 70px;
       width: auto;
       object-fit: contain;
       display: block;
@@ -95,19 +112,6 @@
       padding: 6px 10px;
     }
 
-    .header-links{
-      font-size: 13px;
-      color: var(--header-muted);
-      text-align: right;
-    }
-
-    .header-links a{
-      color: var(--header-text);
-      text-decoration: underline;
-      text-underline-offset: 3px;
-    }
-
-    /* ===== Layout ===== */
     .container{
       max-width: 1100px;
       margin: 26px auto;
@@ -123,7 +127,6 @@
     @media (max-width: 980px){
       .grid{ grid-template-columns: 1fr; }
       .header-right{ align-items: flex-start; }
-      .header-links{ text-align: left; }
       .logos{ justify-content: flex-start; }
     }
 
@@ -145,9 +148,17 @@
       font-size: 13px;
       margin-top: -8px;
       margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    /* Reduce font size of UI messages */
+    .alert,
+    .hint,
+    .progress-log,
+    .phase-message,
+    .stat{
+      font-size: 12px;
     }
 
-    /* ===== Form ===== */
     label{
       display: block;
       margin-top: 12px;
@@ -155,7 +166,7 @@
       font-size: 13px;
     }
 
-    input, select{
+    input, select, textarea{
       width: 100%;
       padding: 10px 12px;
       margin-top: 6px;
@@ -164,6 +175,12 @@
       background: #fff;
       font-size: 14px;
       box-sizing: border-box;
+    }
+
+    textarea{
+      min-height: 48px;
+      resize: vertical;
+      line-height: 1.4;
     }
 
     .row{
@@ -190,6 +207,7 @@
       gap: 10px;
       margin-top: 16px;
       flex-wrap: wrap;
+      align-items: center;
     }
 
     button{
@@ -208,10 +226,22 @@
       border-color: #111827;
     }
 
+    .btn-primary[disabled]{
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
     .btn-danger{
       border-color: #b91c1c;
       color: #b91c1c;
       background: #fff;
+    }
+
+    .btn-danger[disabled]{
+      opacity: 0.5;
+      cursor: not-allowed;
+      border-color: #d1d5db;
+      color: #9ca3af;
     }
 
     .btn-secondary{
@@ -220,7 +250,28 @@
       color: #111827;
     }
 
-    /* ===== Alerts ===== */
+    a.btn-secondary{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: #111827;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    a.btn-secondary.is-disabled{
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+      border-color: #d1d5db;
+      color: #9ca3af;
+      background: #f9fafb;
+    }
+
     .alert{
       padding: 14px;
       margin-top: 16px;
@@ -234,6 +285,16 @@
       border-color: #86efac;
     }
 
+    .alert-info{
+      background-color: #eff6ff;
+      border-color: #93c5fd;
+    }
+
+    .alert-warning{
+      background-color: #fff7ed;
+      border-color: #fdba74;
+    }
+
     pre{
       background: #f3f4f6;
       border: 1px solid var(--border);
@@ -243,6 +304,7 @@
       max-height: 420px;
       overflow-y: auto;
       font-size: 12px;
+      margin: 0;
     }
 
     .stat{
@@ -265,12 +327,226 @@
       color: #111827;
       font-size: 12px;
     }
+
+    .filter-switch{
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      padding: 4px;
+      gap: 4px;
+      margin-top: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .filter-switch input[type="radio"]{
+      display: none;
+    }
+
+    .filter-switch label{
+      margin: 0;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+      min-width: 170px;
+      text-align: center;
+      box-sizing: border-box;
+    }
+
+    .filter-switch input[type="radio"]:checked + label{
+      background: #111827;
+      color: #fff;
+      border-color: #111827;
+    }
+
+    .filter-panel{
+      margin-top: 6px;
+    }
+
+    .progress-log{
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #f3f4f6;
+      font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      max-height: 280px;
+      overflow-y: auto;
+      color: #111827;
+    }
+
+    .hidden{
+      display: none !important;
+    }
+
+    .phase-list{
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .phase-card{
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      padding: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .phase-header{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .phase-title{
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .phase-status{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 700;
+      min-width: 88px;
+    }
+
+    .phase-messages{
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .phase-message{
+      font-size: 13px;
+      color: #374151;
+      line-height: 1.45;
+    }
+
+    .phase-card.waiting{
+      background: var(--waiting-bg);
+      border-color: var(--waiting-border);
+    }
+
+    .phase-card.waiting .phase-status{
+      color: var(--waiting-text);
+      border-color: var(--waiting-border);
+      background: #fff;
+    }
+
+    .phase-card.running{
+      background: var(--running-bg);
+      border-color: var(--running-border);
+    }
+
+    .phase-card.running .phase-status{
+      color: var(--running-text);
+      border-color: var(--running-border);
+      background: #fff;
+    }
+
+    .phase-card.done{
+      background: var(--done-bg);
+      border-color: var(--done-border);
+    }
+
+    .phase-card.done .phase-status{
+      color: var(--done-text);
+      border-color: var(--done-border);
+      background: #fff;
+    }
+
+    .phase-card.error{
+      background: var(--error-bg);
+      border-color: var(--error-border);
+    }
+
+    .phase-card.error .phase-status{
+      color: var(--error-text);
+      border-color: var(--error-border);
+      background: #fff;
+    }
+
+    /* ===== LLM-filled field indicator ===== */
+    .llm-badge{
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #eef2ff;
+      color: #4338ca;
+      border: 1px solid #c7d2fe;
+      margin-left: 8px;
+      cursor: help;
+    }
+
+    .record-summary-row{
+      font-size: 13px;
+      padding: 8px 12px;
+      margin: 14px 0 6px 0;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .record-summary-row.has-llm{
+      background: #eef2ff;
+      color: #3730a3;
+      border-color: #c7d2fe;
+    }
+
+    .record-summary-row.no-llm{
+      background: #f9fafb;
+      color: #6b7280;
+    }
+
+    table.records-table{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    table.records-table th,
+    table.records-table td{
+      text-align: left;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    table.records-table th{
+      background: #f9fafb;
+      font-weight: 700;
+    }
+
+    tr.field-row.llm-filled{
+      background: #fbfaff;
+    }
   </style>
 </head>
 
 <body>
-
-  <!-- ===== Header bar ===== -->
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand">
@@ -280,44 +556,123 @@
 
       <div class="header-right">
         <div class="logos">
-          <!-- project logo -->
           <img src="/static/img/LTER-LIFE-logo.svg" class="logo" alt="Project logo">
-          <!-- university logo (CHANGE filename if needed) -->
-          <!--<img src="/static/img/UvA-logo.png" class="logo" alt="University logo">
         </div>
-        <div class="header-links">
-          Contact: <a href="https://lter-life.nl/en" target="_blank" rel="noopener noreferrer">lter-life.nl/en</a>
-        </div> -->
       </div>
     </div>
   </header>
 
   <main class="container">
     <div class="grid">
-
-      <!-- ===== Left: Harvest form ===== -->
       <section class="card">
         <h2>Harvest</h2>
         <div class="hint">Enter a portal URL and optional date range. Results can be exported as JSON-LD.</div>
 
-        <form method="POST" action="/run">
-          <label>Node Name</label>
-          <input type="text" name="node_name" value="{{ node_name or '' }}" required placeholder="e.g., RIVM, NIOZ, CBS">
+        <form id="harvest-form">
+          <label for="node_name">Node Name</label>
+          <input
+            id="node_name"
+            type="text"
+            name="node_name"
+            value="{{ node_name or '' }}"
+            required
+            placeholder="e.g., RIVM, NIOZ, CBS"
+          >
 
-          <label>URL</label>
-          <input type="text" name="url" value="{{ url or '' }}" required placeholder="https://...">
+          <label for="source">Source</label>
+          <select id="source" name="source">
+            <option value="">Custom / other URL</option>
+            <option value="dataverse_nl">Dataverse.nl</option>
+            <option value="dans">DANS Data Station (Life Sciences)</option>
+            <option value="datahuis_wadden">Datahuis Waddenzee</option>
+            <option value="gbif">GBIF</option>
+            <option value="zenodo">Zenodo</option>
+            <option value="rivm_geonetwork">RIVM (data.rivm.nl)</option>
+          </select>
+
+          <label for="url">URL</label>
+          <input
+            id="url"
+            type="text"
+            name="url"
+            value="{{ url or '' }}"
+            required
+            placeholder="https://..."
+          >
 
           <div class="section">
             <h3 style="margin:0 0 10px 0; font-size:14px;">Time Interval</h3>
             <div class="row">
               <div class="col">
-                <label style="margin-top:0;">From</label>
-                <input type="date" name="from_date" value="{{ from_date or '' }}">
+                <label for="from_date" style="margin-top:0;">From</label>
+                <input id="from_date" type="date" name="from_date" value="{{ from_date or '' }}">
               </div>
               <div class="col">
-                <label style="margin-top:0;">Until</label>
-                <input type="date" name="until_date" value="{{ until_date or '' }}">
+                <label for="until_date" style="margin-top:0;">Until</label>
+                <input id="until_date" type="date" name="until_date" value="{{ until_date or '' }}">
               </div>
+            </div>
+          </div>
+
+          <label for="max_records">Max records (optional)</label>
+          <input
+            id="max_records"
+            type="number"
+            name="max_records"
+            min="1"
+            value="{{ max_records or '' }}"
+            placeholder="e.g. 100 — leave blank for all (Zenodo/GBIF default to 200)"
+          >
+
+          <div class="section">
+            <h3 style="margin:0 0 10px 0; font-size:14px;">Filtering</h3>
+            <div class="hint" style="margin-top:0; margin-bottom:8px;">
+              Choose one filtering method.
+            </div>
+
+            <div class="filter-switch">
+              <input
+                type="radio"
+                id="filter-mode-basic"
+                name="filter_mode"
+                value="basic"
+                {% if (filter_mode or 'basic') == 'basic' %}checked{% endif %}
+              >
+              <label for="filter-mode-basic">Include / Exclude</label>
+
+              <input
+                type="radio"
+                id="filter-mode-advanced"
+                name="filter_mode"
+                value="advanced"
+                {% if filter_mode == 'advanced' %}checked{% endif %}
+              >
+              <label for="filter-mode-advanced">Advanced query</label>
+            </div>
+
+            <div id="basic-filter-fields" class="filter-panel">
+              <label for="include_terms" style="margin-top:0;">Include terms</label>
+              <textarea
+                id="include_terms"
+                name="include_terms"
+                placeholder="e.g. Netherlands, Ecology"
+              >{{ include_terms or '' }}</textarea>
+
+              <label for="exclude_terms">Exclude terms</label>
+              <textarea
+                id="exclude_terms"
+                name="exclude_terms"
+                placeholder="e.g. Clinical, Economics"
+              >{{ exclude_terms or '' }}</textarea>
+            </div>
+
+            <div id="advanced-filter-fields" class="filter-panel" style="display:none;">
+              <label for="filter_query" style="margin-top:0;">Advanced query</label>
+              <textarea
+                id="filter_query"
+                name="filter_query"
+                placeholder='e.g. (Wadden OR Veluwe) AND Biodiversity NOT Clinical'
+              >{{ filter_query or '' }}</textarea>
             </div>
           </div>
 
@@ -326,73 +681,678 @@
 
             <label for="export_format" style="margin-top:0;">Choose export format</label>
             <select name="export_format" id="export_format">
-              <option value="jsonld"
-                {% if export_format == "jsonld" or export_format is not defined %}
-                  selected
-                {% endif %}
-              >
-                JSON-LD
-              </option>
+              <option value="jsonld" selected>JSON-LD</option>
             </select>
           </div>
 
           <div class="actions">
-            <button class="btn-primary" type="submit">Run Harvester</button>
+              <button id="run-btn" class="btn-primary" type="submit">Run Harvester</button>
+            </div>
 
-            {% if record_count and record_count > 0 and export_format == "jsonld" %}
-              <button class="btn-secondary" type="submit" formaction="/download/jsonld" formmethod="GET">
-                Download JSON-LD (ZIP)
-              </button>
-            {% endif %}
+          <div id="run-stats" class="stat hidden">
+            <span id="records-badge" class="badge">Records: 0</span>
+            <span id="last-url-wrap">Last URL: <strong id="last-url"></strong></span>
           </div>
-
-          {% if record_count is not none %}
-          <div class="stat">
-            <span class="badge">Records: {{ record_count }}</span>
-            {% if url %}<span>Last URL: <strong>{{ url }}</strong></span>{% endif %}
-          </div>
-          {% endif %}
         </form>
       </section>
 
-      <!-- ===== Right: Publish / Status ===== -->
       <aside class="card">
         <h2>Publish</h2>
         <div class="hint">Push the latest exported ZIP into GeoNetwork.</div>
 
-        {% if record_count and record_count > 0 and export_format == "jsonld" %}
-           <form method="POST" action="/push-to-catalog">
-               <!-- <form method="POST" action="/push-to-catalog-upsert">-->
-            <button class="btn-danger" type="submit">Push to GeoNetwork</button>
+        <div id="publish-help" class="alert alert-info">
+          Once the harvesting pipeline is finished, you can download the JSON-LD files or push the records to the GeoNetwork catalogue.
+        </div>
+
+        <div class="actions">
+          <a id="download-link" class="btn-secondary is-disabled" href="/download/jsonld" aria-disabled="true">
+            Download JSON-LD (ZIP)
+          </a>
+
+          <form id="push-form" style="margin:0;">
+            <button id="push-btn" class="btn-danger" type="submit" disabled>
+              Push to GeoNetwork
+            </button>
           </form>
-        {% else %}
-          <div class="alert">
-            <div class="hint" style="margin:0;">
-              Run the harvester first to generate the JSON-LD ZIP, then you can push to GeoNetwork.
-            </div>
-          </div>
-        {% endif %}
+        </div>
 
-        {% if push_report %}
-          <div class="alert alert-success">
-            <h3 style="margin:0 0 10px 0; font-size:14px;">GeoNetwork Import Report</h3>
-            <pre>{{ push_report | tojson(indent=2) }}</pre>
-          </div>
-        {% endif %}
+        <div id="push-report-box" class="alert alert-success hidden">
+          <h3 style="margin:0 0 10px 0; font-size:14px;">GeoNetwork Import Report</h3>
+          <pre id="push-report-output"></pre>
+        </div>
       </aside>
-
     </div>
 
-    <!-- ===== Results ===== -->
-    {% if records is defined and records %}
-      <section class="card" style="margin-top:18px;">
-        <h2>Harvested Records</h2>
-        <div class="hint">Raw preview (JSON). You can replace this with a table later if you want.</div>
-        <pre>{{ records | tojson(indent=2) }}</pre>
-      </section>
-    {% endif %}
+    <section id="progress-card" class="card hidden" style="margin-top:18px;">
+      <h2>Progress Log</h2>
+      <div class="hint">Live updates while the harvesting pipeline is running.</div>
 
+      <div id="progress-status" class="alert alert-info">
+        Waiting to start...
+      </div>
+
+      <div id="phase-list" class="phase-list"></div>
+
+      <div id="progress-log" class="progress-log"></div>
+    </section>
+
+    <section id="results-card" class="card hidden" style="margin-top:18px;">
+      <h2>Harvested Records</h2>
+      <div class="hint">Fields highlighted and tagged "LLM-filled" were completed by the LLM enrichment service because the source metadata was missing them; hover the badge for details.</div>
+      <div id="records-output"></div>
+    </section>
+
+    <section id="llm-enrich-card" class="card hidden" style="margin-top:18px;">
+      <h2>LLM Enrichment (optional)</h2>
+      <div class="hint">
+        Some records may have missing fields. You can optionally enrich them using an LLM
+        hosted by SURF (WILLMA). Leave the API key blank to use the default SURF model.
+      </div>
+
+      <div id="enrich-progress-wrap" class="hidden" style="margin-top:14px;">
+        <div style="background:#e5e7eb; border-radius:999px; overflow:hidden; height:10px;">
+          <div id="enrich-progress-bar" style="height:100%; width:0%; background:#111827; transition: width 0.3s ease;"></div>
+        </div>
+        <div id="enrich-progress-text" class="hint" style="margin-top:6px; margin-bottom:0;">Not started</div>
+      </div>
+
+      <label for="llm-api-key">Your API key (optional)</label>
+      <input id="llm-api-key" type="password" placeholder="Leave blank to use default">
+
+      <div class="actions">
+        <button id="enrich-btn" class="btn-primary" type="button">Enrich with LLM</button>
+      </div>
+
+      <pre id="enrich-output" style="margin-top:14px;"></pre>
+    </section>
   </main>
 
+  <script>
+    let currentJobId = null;
+    let pollTimer = null;
+    let lastRenderedLogCount = 0;
+    let enrichmentApplied = false;
+
+    const defaultPhases = [
+      { key: "phase1", title: "PHASE 1 — Endpoint Harvesting", status: "WAITING", messages: [] },
+      { key: "phase2", title: "PHASE 2 — Filtering", status: "WAITING", messages: [] },
+      { key: "phase3", title: "PHASE 3 — Schema Mapping", status: "WAITING", messages: [] },
+      { key: "phase4", title: "PHASE 4 — Export", status: "WAITING", messages: [] }
+    ];
+
+    const SOURCE_URLS = {
+      dataverse_nl: "https://dataverse.nl/",
+      dans: "https://lifesciences.datastations.nl/",
+      datahuis_wadden: "https://datahuiswadden.openearth.nl/geonetwork/",
+      gbif: "https://www.gbif.org/",
+      zenodo: "https://zenodo.org/",
+      rivm_geonetwork: "https://data.rivm.nl/"
+    };
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const sourceSel = document.getElementById("source");
+      const urlInput = document.getElementById("url");
+      const nodeInput = document.getElementById("node_name");
+      if (!sourceSel) return;
+      sourceSel.addEventListener("change", function () {
+        const preset = SOURCE_URLS[sourceSel.value];
+        if (preset) {
+          urlInput.value = preset;
+          if (!nodeInput.value.trim()) {
+            nodeInput.value = sourceSel.options[sourceSel.selectedIndex].text;
+          }
+        }
+      });
+    });
+
+    function toggleFilterMode() {
+      const selected = document.querySelector('input[name="filter_mode"]:checked')?.value || "basic";
+      const basicFields = document.getElementById("basic-filter-fields");
+      const advancedFields = document.getElementById("advanced-filter-fields");
+
+      if (selected === "basic") {
+        basicFields.style.display = "block";
+        advancedFields.style.display = "none";
+      } else {
+        basicFields.style.display = "none";
+        advancedFields.style.display = "block";
+      }
+    }
+
+    function setRunningState(isRunning) {
+      const runBtn = document.getElementById("run-btn");
+      runBtn.disabled = isRunning;
+      runBtn.textContent = isRunning ? "Running..." : "Run Harvester";
+    }
+    function setDownloadState(enabled) {
+      const downloadLink = document.getElementById("download-link");
+
+      if (!downloadLink) return;
+
+      if (enabled) {
+        downloadLink.classList.remove("is-disabled");
+        downloadLink.setAttribute("aria-disabled", "false");
+      } else {
+        downloadLink.classList.add("is-disabled");
+        downloadLink.setAttribute("aria-disabled", "true");
+      }
+    }
+    function setPushState(enabled, message = null, kind = "info") {
+      const pushBtn = document.getElementById("push-btn");
+      const helpBox = document.getElementById("publish-help");
+
+      pushBtn.disabled = !enabled;
+
+      if (message !== null) {
+        helpBox.textContent = message;
+      }
+
+      helpBox.className = "alert";
+      if (kind === "success") {
+        helpBox.classList.add("alert-success");
+      } else if (kind === "warning") {
+        helpBox.classList.add("alert-warning");
+      } else {
+        helpBox.classList.add("alert-info");
+      }
+    }
+
+    function updatePushLabel() {
+      if (enrichmentApplied) {
+        setPushState(true, "Ready to push LLM-enriched records to GeoNetwork.", "success");
+      } else {
+        setPushState(true, "Ready to push records as harvested (no LLM enrichment applied yet).", "info");
+      }
+    }
+
+    function showProgressCard() {
+      document.getElementById("progress-card").classList.remove("hidden");
+    }
+
+    function resetPhaseView() {
+      renderPhases(defaultPhases);
+    }
+
+    function normalizeStatus(status) {
+      const s = (status || "WAITING").toUpperCase();
+      if (["WAITING", "RUNNING", "DONE", "ERROR"].includes(s)) {
+        return s;
+      }
+      return "WAITING";
+    }
+
+    function statusClass(status) {
+      const s = normalizeStatus(status);
+      if (s === "RUNNING") return "running";
+      if (s === "DONE") return "done";
+      if (s === "ERROR") return "error";
+      return "waiting";
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    // ===== LLM-filled field indicator: rendering helpers =====
+    function formatFieldValue(v) {
+      if (Array.isArray(v)) return v.map(x => escapeHtml(x)).join(", ");
+      return escapeHtml(v ?? "");
+    }
+
+    // Renders the flat records array (record_summary rows / field rows /
+    // separator rows, as produced by run_harvest()'s "BUILD UI OUTPUT" step)
+    // as one table per record, with a visible badge on every LLM-filled field.
+    function renderRecordsTable(container, records) {
+      container.innerHTML = "";
+
+      if (!records || records.length === 0) {
+        container.textContent = "No records to display.";
+        return;
+      }
+
+      let currentTableBody = null;
+
+      records.forEach((row) => {
+        if (row.record_summary) {
+          const hasLlm = (row.llm_filled_count || 0) > 0;
+          const summaryDiv = document.createElement("div");
+          summaryDiv.className = "record-summary-row " + (hasLlm ? "has-llm" : "no-llm");
+          summaryDiv.textContent = `Record ${row.record_index}: ${row.message}`;
+          container.appendChild(summaryDiv);
+
+          const table = document.createElement("table");
+          table.className = "records-table";
+          table.innerHTML = `
+            <thead>
+              <tr>
+                <th>LTER-LIFE field</th>
+                <th>Value</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          `;
+          container.appendChild(table);
+          currentTableBody = table.querySelector("tbody");
+          return;
+        }
+
+        if (row.separator) {
+          currentTableBody = null;
+          return;
+        }
+
+        if (!currentTableBody || !("lterlife_field" in row)) return;
+
+        const tr = document.createElement("tr");
+        tr.className = "field-row" + (row.filled_by_llm ? " llm-filled" : "");
+
+        const badge = row.filled_by_llm
+          ? `<span class="llm-badge" title="${escapeHtml(row.llm_message || "Filled by the LLM harvester.")}">LLM-filled</span>`
+          : "";
+
+        tr.innerHTML = `
+          <td>${escapeHtml(row.lterlife_field)}${badge}</td>
+          <td>${formatFieldValue(row.value)}</td>
+          <td>${escapeHtml(row.raw_field || "")}</td>
+        `;
+        currentTableBody.appendChild(tr);
+      });
+    }
+
+    function renderPhases(phases) {
+      const container = document.getElementById("phase-list");
+      const safePhases = Array.isArray(phases) && phases.length ? phases : defaultPhases;
+
+      container.innerHTML = safePhases.map((phase) => {
+        const status = normalizeStatus(phase.status);
+        const messages = Array.isArray(phase.messages) ? phase.messages : [];
+
+        return `
+          <div class="phase-card ${statusClass(status)}">
+            <div class="phase-header">
+              <div class="phase-title">${escapeHtml(phase.title || phase.key || "Unnamed Phase")}</div>
+              <div class="phase-status">${status}</div>
+            </div>
+            ${
+              messages.length
+                ? `<div class="phase-messages">
+                    ${messages.map(msg => `
+                      <div class="phase-message">• ${escapeHtml(msg)}</div>
+                    `).join("")}
+                  </div>`
+                : ""
+            }
+          </div>
+        `;
+      }).join("");
+    }
+
+    function appendLogs(logs) {
+      const container = document.getElementById("progress-log");
+
+      for (let i = lastRenderedLogCount; i < logs.length; i++) {
+        const prefix = i === 0 ? "" : "\n";
+        container.textContent += prefix + logs[i];
+      }
+
+      lastRenderedLogCount = logs.length;
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function setProgressStatus(text, kind = "info") {
+      const box = document.getElementById("progress-status");
+      box.textContent = text;
+      box.className = "alert";
+      if (kind === "success") {
+        box.classList.add("alert-success");
+      } else if (kind === "warning") {
+        box.classList.add("alert-warning");
+      } else {
+        box.classList.add("alert-info");
+      }
+    }
+
+    function showLlmEnrichSection(jobId) {
+      const card = document.getElementById("llm-enrich-card");
+      card.classList.remove("hidden");
+      card.dataset.jobId = jobId;
+
+      // reset any leftover output/state from a previous run
+      document.getElementById("enrich-progress-wrap").classList.add("hidden");
+      document.getElementById("enrich-progress-bar").style.width = "0%";
+      document.getElementById("enrich-output").textContent = "";
+      document.getElementById("llm-api-key").value = "";
+      const btn = document.getElementById("enrich-btn");
+      btn.disabled = false;
+      btn.textContent = "Enrich with LLM";
+    }
+
+    function renderResult(result, formData) {
+      const resultsCard = document.getElementById("results-card");
+      const recordsOutput = document.getElementById("records-output");
+      const runStats = document.getElementById("run-stats");
+      const recordsBadge = document.getElementById("records-badge");
+      const lastUrl = document.getElementById("last-url");
+      const downloadLink = document.getElementById("download-link");
+
+      resultsCard.classList.remove("hidden");
+      runStats.classList.remove("hidden");
+
+
+      const records = result?.records || [];
+      const recordCount = result?.record_count || 0;
+
+      renderRecordsTable(recordsOutput, records);
+      recordsBadge.textContent = `Records: ${recordCount}`;
+      lastUrl.textContent = formData.get("url") || "";
+
+      // Reveal the optional LLM enrichment step now that results are in.
+      if (currentJobId) {
+        showLlmEnrichSection(currentJobId);
+      }
+    }
+
+    document.getElementById("enrich-btn").addEventListener("click", async function () {
+      const btn = this;
+      const card = document.getElementById("llm-enrich-card");
+      const jobId = card.dataset.jobId;
+      const apiKey = document.getElementById("llm-api-key").value;
+      const output = document.getElementById("enrich-output");
+      const progressWrap = document.getElementById("enrich-progress-wrap");
+      const progressBar = document.getElementById("enrich-progress-bar");
+      const progressText = document.getElementById("enrich-progress-text");
+
+      if (!jobId) {
+        output.textContent = "No active job to enrich.";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Enriching...";
+      output.textContent = "";
+      progressWrap.classList.remove("hidden");
+      progressBar.style.width = "0%";
+      progressText.textContent = "Starting...";
+
+      const body = new URLSearchParams();
+      if (apiKey) body.append("api_key", apiKey);
+
+      try {
+        const startRes = await fetch(`/enrich-llm/${jobId}`, { method: "POST", body: body });
+        const startData = await startRes.json();
+        if (!startRes.ok) throw new Error(startData.detail || "Failed to start enrichment.");
+
+        const poll = setInterval(async () => {
+          try {
+            const res = await fetch(`/enrich-status/${jobId}`);
+            const data = await res.json();
+            const progress = data.progress || { current: 0, total: 0, status: "running" };
+            const pct = progress.total ? Math.round((progress.current / progress.total) * 100) : 0;
+
+            progressBar.style.width = `${pct}%`;
+            progressText.textContent = `${progress.current} / ${progress.total} records processed (${pct}%)`;
+
+            if (progress.status === "done") {
+              clearInterval(poll);
+              renderRecordsTable(
+                document.getElementById("records-output"),
+                data.result?.records || []
+              );
+              const recordsBadge = document.getElementById("records-badge");
+              if (data.result?.record_count !== undefined) {
+                recordsBadge.textContent = `Records: ${data.result.record_count}`;
+              }
+              output.textContent = "Enrichment complete.";
+              btn.disabled = false;
+              btn.textContent = "Enrich with LLM";
+
+              enrichmentApplied = true;
+              updatePushLabel();
+            } else if (progress.status === "error") {
+              clearInterval(poll);
+              output.textContent = `Error: ${progress.error || "Enrichment failed."}`;
+              btn.disabled = false;
+              btn.textContent = "Enrich with LLM";
+            }
+          } catch (err) {
+            clearInterval(poll);
+            output.textContent = `Error while checking progress: ${err.message}`;
+            btn.disabled = false;
+            btn.textContent = "Enrich with LLM";
+          }
+        }, 1000);
+
+      } catch (err) {
+        output.textContent = `Error: ${err.message}`;
+        btn.disabled = false;
+        btn.textContent = "Enrich with LLM";
+      }
+    });
+
+    async function pollJobStatus(jobId, formData) {
+      try {
+        const res = await fetch(`/run-status/${jobId}`, {
+          method: "GET"
+        });
+
+        if (!res.ok) {
+          throw new Error(`Status request failed: ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        const logs = data.logs || [];
+        appendLogs(logs);
+
+        if (data.phases) {
+          renderPhases(data.phases);
+        }
+
+        if (data.status === "running") {
+          setProgressStatus("Pipeline is running...", "info");
+          setDownloadState(false);
+          setPushState(
+            false,
+            "After harvesting finishes, you can download the JSON-LD files and push records to GeoNetwork.",
+            "info"
+          );
+          return;
+        }
+
+        if (data.status === "done") {
+          setProgressStatus("Pipeline finished successfully.", "success");
+          setDownloadState(true);
+          setPushState(
+            true,
+            "Harvesting pipeline finished. You can now push records to the GeoNetwork catalogue.",
+            "success"
+          );
+
+          if (!data.phases) {
+            const phasesDone = defaultPhases.map(p => ({ ...p, status: "DONE" }));
+            renderPhases(phasesDone);
+          }
+
+          clearInterval(pollTimer);
+          pollTimer = null;
+          setRunningState(false);
+          renderResult(data.result || {}, formData);
+          updatePushLabel();
+          return;
+        }
+
+        if (data.status === "error") {
+          setProgressStatus(data.error || "Pipeline failed.", "warning");
+          setDownloadState(false);
+          setPushState(
+            false,
+            "The harvesting pipeline did not finish successfully, so pushing to GeoNetwork is disabled.",
+            "warning"
+          );
+
+          if (!data.phases) {
+            const fallback = structuredClone(defaultPhases);
+            const lastNonWaiting = fallback.findLastIndex(p => p.status !== "WAITING");
+            const idx = lastNonWaiting >= 0 ? lastNonWaiting : 0;
+            fallback[idx].status = "ERROR";
+            renderPhases(fallback);
+          }
+
+          clearInterval(pollTimer);
+          pollTimer = null;
+          setRunningState(false);
+          return;
+        }
+      } catch (err) {
+        setProgressStatus(`Error while checking progress: ${err.message}`, "warning");
+        clearInterval(pollTimer);
+        pollTimer = null;
+        setRunningState(false);
+      }
+    }
+
+    document.getElementById("harvest-form").addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+
+      const form = event.target;
+      const formData = new FormData(form);
+
+      currentJobId = null;
+      lastRenderedLogCount = 0;
+      enrichmentApplied = false;
+      document.getElementById("progress-log").textContent = "";
+      document.getElementById("results-card").classList.add("hidden");
+      document.getElementById("llm-enrich-card").classList.add("hidden");
+      setDownloadState(false);
+      document.getElementById("push-report-box").classList.add("hidden");
+      document.getElementById("push-report-output").textContent = "";
+
+      showProgressCard();
+      resetPhaseView();
+      setRunningState(true);
+      setPushState(
+        false,
+        "After harvesting finishes, you can download the JSON-LD files and push records to GeoNetwork.",
+        "info"
+      );
+      setProgressStatus("Starting job...", "info");
+
+      const startupPhases = structuredClone(defaultPhases);
+      startupPhases[0].status = "RUNNING";
+      startupPhases[0].messages = ["Connecting to endpoint."];
+      renderPhases(startupPhases);
+
+      try {
+        const res = await fetch("/run", {
+          method: "POST",
+          body: formData
+        });
+
+        if (!res.ok) {
+          throw new Error(`Run request failed: ${res.status}`);
+        }
+
+        const data = await res.json();
+        currentJobId = data.job_id;
+
+        if (!currentJobId) {
+          throw new Error("No job_id returned from backend.");
+        }
+
+        setProgressStatus("Starting harvesting pipeline...", "info");
+
+        pollTimer = setInterval(() => {
+          pollJobStatus(currentJobId, formData);
+        }, 1200);
+
+        pollJobStatus(currentJobId, formData);
+      } catch (err) {
+        setProgressStatus(`Failed to start job: ${err.message}`, "warning");
+
+        const failPhases = structuredClone(defaultPhases);
+        failPhases[0].status = "ERROR";
+        failPhases[0].messages = [`Failed to start job: ${err.message}`];
+        renderPhases(failPhases);
+
+        setRunningState(false);
+      }
+    });
+
+    document.getElementById("push-form").addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const pushBtn = document.getElementById("push-btn");
+      const reportBox = document.getElementById("push-report-box");
+      const reportOutput = document.getElementById("push-report-output");
+
+      pushBtn.disabled = true;
+      pushBtn.textContent = "Pushing...";
+
+      try {
+        const res = await fetch("/push-to-catalog", {
+          method: "POST"
+        });
+
+        const data = await res.json();
+
+        reportBox.classList.remove("hidden");
+
+        if (!res.ok) {
+          reportOutput.textContent = JSON.stringify(data, null, 2);
+          throw new Error(data.error || `Push request failed: ${res.status}`);
+        }
+
+        reportOutput.textContent = JSON.stringify(data.push_report || data, null, 2);
+
+        setPushState(
+          true,
+          "Push finished. Review the GeoNetwork import report below.",
+          "success"
+        );
+      } catch (err) {
+        reportBox.classList.remove("hidden");
+
+        if (!reportOutput.textContent) {
+          reportOutput.textContent = err.message;
+        }
+
+        setPushState(
+          true,
+          `Push failed: ${err.message}`,
+          "warning"
+        );
+      } finally {
+        pushBtn.disabled = false;
+        pushBtn.textContent = "Push to GeoNetwork";
+      }
+    });
+
+   document.addEventListener("DOMContentLoaded", function () {
+      const filterRadios = document.querySelectorAll('input[name="filter_mode"]');
+      filterRadios.forEach(radio => {
+        radio.addEventListener("change", toggleFilterMode);
+      });
+
+      toggleFilterMode();
+      resetPhaseView();
+      setDownloadState(false);
+      setPushState(
+        false,
+        "Once the harvesting pipeline is finished, you can download the JSON-LD files and push the records to the GeoNetwork catalogue.",
+        "info"
+      );
+    });
+  </script>
 </body>
 </html>

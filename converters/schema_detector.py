@@ -26,5 +26,9 @@ def detect_schema(xml_string: str) -> str:
     if "csw:record" in xml_text or "http://www.opengis.net/cat/csw" in xml_text:
         return "csw"
 
+    # Add inside detect_schema():
+    if "zenodo.org" in xml_text or '"conceptrecid"' in xml_text:
+        return "zenodo"
+
     # ✅ Fallback
     return "generic"
