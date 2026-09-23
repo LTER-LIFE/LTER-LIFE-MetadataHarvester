@@ -543,6 +543,63 @@
     tr.field-row.llm-filled{
       background: #fbfaff;
     }
+    /* ===== Field help: "?" icon with a click/hover explanation ===== */
+    .help{
+      position: relative;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+    .help-btn{
+      width: 17px;
+      height: 17px;
+      padding: 0;
+      border-radius: 50%;
+      border: 1px solid #9ca3af;
+      background: #fff;
+      color: #4b5563;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 15px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .help-btn:hover,
+    .help-btn:focus-visible,
+    .help.open .help-btn{
+      border-color: var(--header-bg);
+      background: var(--header-bg);
+      color: #fff;
+      outline: none;
+    }
+    .help-pop{
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: -8px;
+      z-index: 50;
+      width: 300px;
+      max-width: calc(100vw - 32px);
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #111827;
+      color: #f9fafb;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.5;
+      text-align: left;
+      box-shadow: var(--shadow);
+      white-space: normal;
+    }
+    .help-pop code{
+      color: #fde68a;
+      font-size: 11px;
+    }
+    .help:hover .help-pop,
+    .help-btn:focus-visible + .help-pop,
+    .help.open .help-pop{
+      display: block;
+    }
   </style>
 </head>
 
@@ -569,7 +626,7 @@
         <div class="hint">Enter a portal URL and optional date range. Results can be exported as JSON-LD.</div>
 
         <form id="harvest-form">
-          <label for="node_name">Node Name</label>
+          <label for="node_name">Node Name <span class="help"><button type="button" class="help-btn" aria-label="What is Node Name?" aria-expanded="false" aria-describedby="help-node">?</button><span class="help-pop" role="tooltip" id="help-node">A name for this harvest, such as the organisation or LTER-LIFE node the records belong to. Filled in automatically when you pick a Source. It is shown in the Harvesting Report and does not change which records are harvested.</span></span></label>
           <input
             id="node_name"
             type="text"
@@ -579,7 +636,7 @@
             placeholder="e.g., RIVM, NIOZ, CBS"
           >
 
-          <label for="source">Source</label>
+          <label for="source">Source <span class="help"><button type="button" class="help-btn" aria-label="What is Source?" aria-expanded="false" aria-describedby="help-source">?</button><span class="help-pop" role="tooltip" id="help-source">The portal to harvest from. Picking one fills in the URL and uses the right connection: Dataverse.nl and DANS use OAI-PMH, Datahuis Waddenzee and RIVM use CSW, Zenodo and GBIF use their REST APIs. Choose <em>Custom / other URL</em> to type an address yourself.</span></span></label>
           <select id="source" name="source">
             <option value="">Custom / other URL</option>
             <option value="dataverse_nl">Dataverse.nl</option>
@@ -590,7 +647,7 @@
             <option value="rivm_geonetwork">RIVM (data.rivm.nl)</option>
           </select>
 
-          <label for="url">URL</label>
+          <label for="url">URL <span class="help"><button type="button" class="help-btn" aria-label="What is URL?" aria-expanded="false" aria-describedby="help-url">?</button><span class="help-pop" role="tooltip" id="help-url">The portal's web address. Filled in from Source; you only need to edit it for a custom URL.</span></span></label>
           <input
             id="url"
             type="text"
@@ -601,7 +658,7 @@
           >
 
           <div class="section">
-            <h3 style="margin:0 0 10px 0; font-size:14px;">Time Interval</h3>
+            <h3 style="margin:0 0 10px 0; font-size:14px;">Time Interval <span class="help"><button type="button" class="help-btn" aria-label="What is Time Interval?" aria-expanded="false" aria-describedby="help-time">?</button><span class="help-pop" role="tooltip" id="help-time">Optional. Only records whose date falls between From and Until are harvested. What the date means depends on the portal:<br>• <b>Dataverse.nl, DANS</b>: when the record was last changed in the repository (not the publication date)<br>• <b>Datahuis, RIVM</b>: when the metadata was last modified<br>• <b>Zenodo</b>: publication date<br>• <b>GBIF</b>: when the dataset was last modified</span></span></h3>
             <div class="row">
               <div class="col">
                 <label for="from_date" style="margin-top:0;">From</label>
@@ -614,18 +671,18 @@
             </div>
           </div>
 
-          <label for="max_records">Max records (optional)</label>
+          <label for="max_records">Max records (optional) <span class="help"><button type="button" class="help-btn" aria-label="What is Max records?" aria-expanded="false" aria-describedby="help-max">?</button><span class="help-pop" role="tooltip" id="help-max">The most records to download. Leave blank for all. When blank, Zenodo still stops at 50 and GBIF at 200 to keep runs short. With a limit, the Harvesting Report counts only the downloaded records.</span></span></label>
           <input
             id="max_records"
             type="number"
             name="max_records"
             min="1"
             value="{{ max_records or '' }}"
-            placeholder="e.g. 100 — leave blank for all (Zenodo/GBIF default to 200)"
+            placeholder="e.g. 100 — leave blank for all (Zenodo stops at 50, GBIF at 200)"
           >
 
           <div class="section">
-            <h3 style="margin:0 0 10px 0; font-size:14px;">Filtering</h3>
+            <h3 style="margin:0 0 10px 0; font-size:14px;">Filtering <span class="help"><button type="button" class="help-btn" aria-label="What is Filtering?" aria-expanded="false" aria-describedby="help-filter">?</button><span class="help-pop" role="tooltip" id="help-filter">Keeps only the records you are interested in. Both methods search the whole text of each record, ignore upper/lower case, and match parts of words (<em>sea</em> also matches <em>research</em>). The Harvesting Report shows how many records each term kept or removed.</span></span></h3>
             <div class="hint" style="margin-top:0; margin-bottom:8px;">
               Choose one filtering method.
             </div>
@@ -651,14 +708,14 @@
             </div>
 
             <div id="basic-filter-fields" class="filter-panel">
-              <label for="include_terms" style="margin-top:0;">Include terms</label>
+              <label for="include_terms" style="margin-top:0;">Include terms <span class="help"><button type="button" class="help-btn" aria-label="What is Include terms?" aria-expanded="false" aria-describedby="help-include">?</button><span class="help-pop" role="tooltip" id="help-include">Separate terms with commas or new lines. A record is kept if it contains <b>at least one</b> of them. Leave empty to keep all records. For Datahuis, RIVM, Zenodo and GBIF these terms are also sent to the portal, so fewer records are downloaded.</span></span></label>
               <textarea
                 id="include_terms"
                 name="include_terms"
                 placeholder="e.g. Netherlands, Ecology"
               >{{ include_terms or '' }}</textarea>
 
-              <label for="exclude_terms">Exclude terms</label>
+              <label for="exclude_terms">Exclude terms <span class="help"><button type="button" class="help-btn" aria-label="What is Exclude terms?" aria-expanded="false" aria-describedby="help-exclude">?</button><span class="help-pop" role="tooltip" id="help-exclude">Separate terms with commas or new lines. A record is removed if it contains <b>any</b> of them, even when it also contains an include term.</span></span></label>
               <textarea
                 id="exclude_terms"
                 name="exclude_terms"
@@ -667,7 +724,7 @@
             </div>
 
             <div id="advanced-filter-fields" class="filter-panel" style="display:none;">
-              <label for="filter_query" style="margin-top:0;">Advanced query</label>
+              <label for="filter_query" style="margin-top:0;">Advanced query <span class="help"><button type="button" class="help-btn" aria-label="What is Advanced query?" aria-expanded="false" aria-describedby="help-advanced">?</button><span class="help-pop" role="tooltip" id="help-advanced">One search expression. Combine terms with <b>AND</b>, <b>OR</b>, <b>NOT</b> and parentheses, and put phrases in double quotes. Terms written next to each other must all appear. Example: <code>(wadden OR waddenzee) AND "salt marsh" NOT clinical</code>. Applied after download only; nothing is sent to the portal.</span></span></label>
               <textarea
                 id="filter_query"
                 name="filter_query"
@@ -677,7 +734,7 @@
           </div>
 
           <div class="section">
-            <h3 style="margin:0 0 10px 0; font-size:14px;">Export Format</h3>
+            <h3 style="margin:0 0 10px 0; font-size:14px;">Export Format <span class="help"><button type="button" class="help-btn" aria-label="What is Export Format?" aria-expanded="false" aria-describedby="help-export">?</button><span class="help-pop" role="tooltip" id="help-export">The file format of the harvested records. The ZIP contains one JSON-LD file per record, in the LTER-LIFE metadata schema.</span></span></h3>
 
             <label for="export_format" style="margin-top:0;">Choose export format</label>
             <select name="export_format" id="export_format">
@@ -709,6 +766,10 @@
             Download JSON-LD (ZIP)
           </a>
 
+          <a id="report-link" class="btn-secondary is-disabled" href="#" aria-disabled="true">
+            Download Harvesting Report (JSON)
+          </a>
+
           <form id="push-form" style="margin:0;">
             <button id="push-btn" class="btn-danger" type="submit" disabled>
               Push to GeoNetwork
@@ -734,6 +795,12 @@
       <div id="phase-list" class="phase-list"></div>
 
       <div id="progress-log" class="progress-log"></div>
+    </section>
+
+    <section id="report-card" class="card hidden" style="margin-top:18px;">
+      <h2>Harvesting Report</h2>
+      <div class="hint">How each filtering layer and each term shaped the final result set. Use it to tune inclusion / exclusion terms.</div>
+      <div id="report-output"></div>
     </section>
 
     <section id="results-card" class="card hidden" style="margin-top:18px;">
@@ -1033,6 +1100,92 @@
       btn.textContent = "Enrich with LLM";
     }
 
+    function fmtCount(v) {
+      return (v === null || v === undefined) ? "n/a" : Number(v).toLocaleString();
+    }
+
+    function renderTermTable(title, terms, columns) {
+      const names = Object.keys(terms || {});
+      if (!names.length) return "";
+      const head = columns.map(c => `<th>${escapeHtml(c.label)}</th>`).join("");
+      const rows = names.map(name => {
+        const st = terms[name] || {};
+        return `<tr><td>${escapeHtml(name)}</td>${columns.map(c => `<td>${fmtCount(st[c.key])}</td>`).join("")}</tr>`;
+      }).join("");
+      return `<h3 style="font-size:14px; margin:16px 0 6px 0;">${escapeHtml(title)}</h3>
+        <table class="records-table"><thead><tr><th>Term</th>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+    }
+
+    function renderHarvestReport(report) {
+      const card = document.getElementById("report-card");
+      const out = document.getElementById("report-output");
+      const link = document.getElementById("report-link");
+
+      if (!report) {
+        card.classList.add("hidden");
+        link.classList.add("is-disabled");
+        link.setAttribute("aria-disabled", "true");
+        return;
+      }
+
+      const c = report.counts || {};
+      const ti = report.time_interval || {};
+      const req = report.server_side_request || {};
+      const reqText = req.q || req.filter || (req.verb ? `${req.verb} from=${req.from || "-"} until=${req.until || "-"}` : "");
+
+      const countRows = [
+        ["Records found by repository", c.records_found],
+        ["After server-side filtering", c.after_server_side_filtering],
+        ["After client-side pre-download filtering", c.after_client_pre_download_filtering],
+        ["Records downloaded", c.records_downloaded],
+        ["After client-side post-download filtering", c.after_client_post_download_filtering],
+        ["Final harvested records", c.final_records],
+      ].map(([label, v]) => `<tr><td>${escapeHtml(label)}</td><td>${fmtCount(v)}</td></tr>`).join("");
+
+      let html = `
+        <table class="records-table"><tbody>
+          <tr><td>Node</td><td>${escapeHtml(report.node || "")}</td></tr>
+          <tr><td>Source</td><td>${escapeHtml(report.source || "")} (${escapeHtml(report.protocol || "")})</td></tr>
+          <tr><td>Time interval</td><td>${escapeHtml(ti.from || "—")} → ${escapeHtml(ti.until || "—")}</td></tr>
+          <tr><td>Filtering method</td><td>${report.filtering_method === "advanced_query" ? "Advanced query" : "Include / Exclude"}</td></tr>
+          ${report.advanced_query ? `<tr><td>Advanced query</td><td><code>${escapeHtml(report.advanced_query)}</code></td></tr>` : ""}
+          <tr><td>Sent to portal</td><td><code>${escapeHtml(reqText || "(none)")}</code></td></tr>
+        </tbody></table>
+        <h3 style="font-size:14px; margin:16px 0 6px 0;">Records after each layer</h3>
+        <table class="records-table"><tbody>${countRows}</tbody></table>`;
+
+      if (report.filtering_method === "advanced_query") {
+        html += renderTermTable("Query terms", report.query_terms, [
+          { key: "matches", label: "Downloaded records containing it" },
+          { key: "in_final", label: "Final records containing it" },
+        ]);
+      } else {
+        html += renderTermTable("Inclusion terms", report.inclusion_terms, [
+          { key: "matches", label: "Matches" },
+          { key: "in_final", label: "In final set" },
+          { key: "only_reason_kept", label: "Kept only by this term" },
+        ]);
+        html += renderTermTable("Exclusion terms", report.exclusion_terms, [
+          { key: "matches", label: "Matches" },
+          { key: "excluded", label: "Excluded" },
+          { key: "only_reason_excluded", label: "Excluded only by this term" },
+        ]);
+      }
+
+      if ((report.notes || []).length) {
+        html += `<div class="hint" style="margin-top:14px;">${report.notes.map(n => "• " + escapeHtml(n)).join("<br>")}</div>`;
+      }
+
+      out.innerHTML = html;
+      card.classList.remove("hidden");
+
+      if (currentJobId) {
+        link.href = `/download/harvest-report/${currentJobId}`;
+        link.classList.remove("is-disabled");
+        link.setAttribute("aria-disabled", "false");
+      }
+    }
+
     function renderResult(result, formData) {
       const resultsCard = document.getElementById("results-card");
       const recordsOutput = document.getElementById("records-output");
@@ -1049,6 +1202,7 @@
       const recordCount = result?.record_count || 0;
 
       renderRecordsTable(recordsOutput, records);
+      renderHarvestReport(result?.harvest_report);
       recordsBadge.textContent = `Records: ${recordCount}`;
       lastUrl.textContent = formData.get("url") || "";
 
@@ -1234,6 +1388,7 @@
       document.getElementById("progress-log").textContent = "";
       document.getElementById("results-card").classList.add("hidden");
       document.getElementById("llm-enrich-card").classList.add("hidden");
+      renderHarvestReport(null);
       setDownloadState(false);
       document.getElementById("push-report-box").classList.add("hidden");
       document.getElementById("push-report-output").textContent = "";
@@ -1336,6 +1491,51 @@
         pushBtn.disabled = false;
         pushBtn.textContent = "Push to GeoNetwork";
       }
+    });
+
+   // Field help: click/tap toggles the explanation (hover also shows it).
+   function closeAllHelp(except) {
+      document.querySelectorAll(".help.open").forEach(h => {
+        if (h === except) return;
+        h.classList.remove("open");
+        h.querySelector(".help-btn").setAttribute("aria-expanded", "false");
+      });
+    }
+
+    document.addEventListener("click", function (event) {
+      const btn = event.target.closest(".help-btn");
+      if (!btn) {
+        if (!event.target.closest(".help-pop")) closeAllHelp(null);
+        return;
+      }
+      event.preventDefault();
+      const help = btn.closest(".help");
+      closeAllHelp(help);
+      const isOpen = help.classList.toggle("open");
+      btn.setAttribute("aria-expanded", String(isOpen));
+      if (isOpen) fitHelpPop(help);
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") closeAllHelp(null);
+    });
+
+    // Keep an open explanation inside the window (16px margin), e.g. on phones.
+    function fitHelpPop(help) {
+      const pop = help.querySelector(".help-pop");
+      pop.style.transform = "";
+      const r = pop.getBoundingClientRect();
+      if (!r.width) return;
+      const vw = document.documentElement.clientWidth;
+      let dx = 0;
+      if (r.right > vw - 16) dx = vw - 16 - r.right;
+      if (r.left + dx < 16) dx = 16 - r.left;
+      pop.style.transform = `translateX(${dx}px)`;
+    }
+
+    document.querySelectorAll(".help").forEach(help => {
+      help.addEventListener("mouseenter", () => fitHelpPop(help));
+      help.addEventListener("focusin", () => fitHelpPop(help));
     });
 
    document.addEventListener("DOMContentLoaded", function () {

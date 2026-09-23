@@ -30,10 +30,22 @@ def _build_query(start_date=None, end_date=None, include_terms=None) -> str:
     return " AND ".join(clauses)
 
 
+def _count_all_records(api_url: str, headers: dict) -> int | None:
+    """Best-effort total number of records in Zenodo (no query at all)."""
+    try:
+        resp = requests.get(api_url, params={"size": 1}, headers=headers, timeout=90)
+        resp.raise_for_status()
+        return int(resp.json().get("hits", {}).get("total"))
+    except Exception as e:
+        print(f"⚠️ Zenodo total count unavailable: {type(e).__name__}: {e}", flush=True)
+        return None
+
+
 def harvest_zenodo(api_url: str, max_records: int = None,
                     start_date=None, end_date=None,
                     include_terms: list[str] | None = None,
-                    progress_cb=None) -> list[dict]:
+                    progress_cb=None,
+                    stats: dict | None = None) -> list[dict]:
     print(f"📚 Harvesting Zenodo from {api_url}")
     print(f"⏱ From: {start_date} | Until: {end_date}")
     print(f"🔎 Include terms: {include_terms}")
@@ -55,6 +67,14 @@ def harvest_zenodo(api_url: str, max_records: int = None,
         params["q"] = query
 
     headers = {"User-Agent": "LTER-LIFE-Harvester/1.0"}
+
+    if stats is not None:
+        stats["server_side_request"] = {
+            "q": query or "(none)",
+            "note": "Exclude terms and advanced queries are not sent to the portal; "
+                    "they are applied after download.",
+        }
+        stats["records_found"] = _count_all_records(api_url, headers)
     results = []
     MAX_PAGES = 200
     REQUEST_DELAY = 1.0
@@ -106,6 +126,8 @@ def harvest_zenodo(api_url: str, max_records: int = None,
 
         if params["page"] == 1:
             total = data.get("hits", {}).get("total", "?")
+            if stats is not None and isinstance(total, int):
+                stats["after_server_side_filtering"] = total
             print(f"🔎 Query: {params.get('q', '(none)')} → total hits reported by Zenodo: {total}", flush=True)
             _emit(f"Zenodo reports {total} matching records for the current query.")
 

@@ -64,7 +64,7 @@ from typing import Optional, Tuple, List, Dict, Any
 
 import requests
 
-from harvesterv3_Frontend import run_harvest, enrich_and_reexport
+from harvesterv3_Frontend import run_harvest, enrich_and_reexport, SOURCES
 from exporters.zip_utils import create_zip
 
 
@@ -719,6 +719,13 @@ def _run_harvest_job(
         _finalize_phases_success(job_id)
 
         _update_job(job_id, mapped_records=result.get("mapped_records"))
+
+        harvest_report = {
+            "node": node_name,
+            "source": (SOURCES.get(source or "", {}).get("label") or "Custom URL"),
+            "url": url,
+            **(result.get("harvest_report") or {}),
+        }
         _update_job(
             job_id,
             status="done",
@@ -731,6 +738,7 @@ def _run_harvest_job(
                 "record_count": record_count,
                 "records": ui_records,
                 "filter_info": filter_info,
+                "harvest_report": harvest_report,
             },
         )
 
@@ -964,6 +972,21 @@ def download_jsonld_zip():
         ZIP_PATH,
         media_type="application/zip",
         filename="lterlife_jsonld_records.zip",
+    )
+
+
+# =====================================================
+# Download: harvest statistics report (per job)
+# =====================================================
+@app.get("/download/harvest-report/{job_id}")
+def download_harvest_report(job_id: str):
+    job = _get_job(job_id)
+    report = ((job or {}).get("result") or {}).get("harvest_report")
+    if not report:
+        raise HTTPException(status_code=404, detail="No harvest report for this job. Run a harvest first.")
+    return JSONResponse(
+        report,
+        headers={"Content-Disposition": f'attachment; filename="harvest_report_{job_id[:8]}.json"'},
     )
 
 

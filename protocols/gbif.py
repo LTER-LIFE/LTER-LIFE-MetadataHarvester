@@ -50,7 +50,8 @@ def harvest_gbif(search_url: str,
                  end_date=None,
                  include_terms: list[str] | None = None,
                  exclude_terms: list[str] | None = None,
-                 progress_cb=None) -> list[str]:
+                 progress_cb=None,
+                 stats: dict | None = None) -> list[str]:
     print(f"🐝 Harvesting GBIF from {search_url}")
     print(f"⏱ From: {start_date} | Until: {end_date}")
     print(f"🔎 Include terms: {include_terms}")
@@ -67,9 +68,25 @@ def harvest_gbif(search_url: str,
     headers = {"User-Agent": "LTER-LIFE-Harvester/1.0"}
     session = requests.Session()
 
+    if stats is not None:
+        stats["server_side_request"] = {
+            "q": q or "(none)",
+            "note": "Date range is checked on the search hit's 'modified' date before "
+                    "downloading EML (pre-download). Exclude terms and advanced queries "
+                    "are applied after download.",
+        }
+        try:
+            r0 = session.get(search_url, params={"limit": 0}, headers=headers, timeout=30)
+            r0.raise_for_status()
+            stats["records_found"] = int(r0.json().get("count"))
+        except Exception as e:
+            print(f"⚠️ GBIF total count unavailable: {type(e).__name__}: {e}", flush=True)
+            stats["records_found"] = None
+
     keys: list[str] = []
     seen: set[str] = set()
     offset = 0
+    hits_examined = 0
 
     for page in range(MAX_PAGES):
         params = {"limit": PAGE_SIZE, "offset": offset}
@@ -103,6 +120,8 @@ def harvest_gbif(search_url: str,
         if page == 0:
             print(f"🔎 GBIF reports {data.get('count', '?')} datasets for q={q or '(none)'}", flush=True)
             _emit(f"GBIF reports {data.get('count', '?')} datasets for the current query.")
+            if stats is not None and isinstance(data.get("count"), int):
+                stats["after_server_side_filtering"] = data["count"]
 
         if not results:
             break
@@ -111,6 +130,7 @@ def harvest_gbif(search_url: str,
             key = hit.get("key")
             if not key or key in seen:
                 continue
+            hits_examined += 1
             if not _in_date_range(hit, start_date, end_date):
                 continue
             seen.add(key)
@@ -125,6 +145,14 @@ def harvest_gbif(search_url: str,
 
         offset += PAGE_SIZE
         time.sleep(REQUEST_DELAY)
+
+    if stats is not None:
+        stats["pre_download"] = {
+            "applies": bool(start_date or end_date),
+            "filter": "date range on search-hit 'modified'",
+            "search_hits_examined": hits_examined,
+            "kept": len(keys),
+        }
 
     print(f"📦 Fetching EML for {len(keys)} GBIF datasets", flush=True)
     _emit(f"GBIF: fetching metadata for {len(keys)} datasets…")

@@ -4,6 +4,7 @@ import requests
 import xml.etree.ElementTree as ET
 import json
 from collections import defaultdict
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 from typing import Callable, Optional
 
@@ -476,8 +477,13 @@ def _matches_advanced_filter_text(text: str, query: str) -> bool:
         return True
 
     expr_parts = []
+    prev_is_operand = False  # previous token was a term or ")"
     for tok in tokens:
         upper_tok = tok.upper()
+        # Implicit AND: "wadden sea" -> wadden AND sea, "a NOT b" -> a AND NOT b.
+        if prev_is_operand and (upper_tok == "NOT" or tok == "(" or upper_tok not in ("AND", "OR", ")")):
+            expr_parts.append(" and ")
+        prev_is_operand = upper_tok not in ("AND", "OR", "NOT") and tok != "("
         if upper_tok == "AND":
             expr_parts.append(" and ")
         elif upper_tok == "OR":
@@ -497,6 +503,18 @@ def _matches_advanced_filter_text(text: str, query: str) -> bool:
     except Exception:
         print(f"⚠️ Invalid advanced query syntax. Query={query!r}", flush=True)
         return True
+
+
+def _advanced_query_terms(query: str) -> list[str]:
+    """The search terms (not operators/parentheses) of an advanced query, lowercased, de-duplicated."""
+    out = []
+    for tok in _tokenize_query(query):
+        if tok.upper() in ("AND", "OR", "NOT") or tok in ("(", ")"):
+            continue
+        term = tok.strip('"').lower()
+        if term and term not in out:
+            out.append(term)
+    return out
 
 
 def apply_filter_to_raw_records(records: list[str], filter_spec: dict | None) -> tuple[list[str], dict]:
@@ -533,17 +551,62 @@ def apply_filter_to_raw_records(records: list[str], filter_spec: dict | None) ->
             "query": query,
         }
 
+    # Per-term bookkeeping for the harvest report (see build_term_stats()).
+    query_terms = _advanced_query_terms(query) if mode == "advanced" else []
+    inc_stats = {t: {"matches": 0, "in_final": 0, "only_reason_kept": 0} for t in include_terms}
+    exc_stats = {t: {"matches": 0, "excluded": 0, "only_reason_excluded": 0} for t in exclude_terms}
+    adv_stats = {t: {"matches": 0, "in_final": 0} for t in query_terms}
+    removed_no_include = 0
+    removed_by_exclude = 0
+
     filtered = []
     for record_xml in records:
         text = _xml_record_to_searchable_text(record_xml)
 
         if mode == "advanced":
             keep = _matches_advanced_filter_text(text, query)
+            for t in query_terms:
+                if t in text:
+                    adv_stats[t]["matches"] += 1
+                    if keep:
+                        adv_stats[t]["in_final"] += 1
         else:
             keep = _matches_basic_filter_text(text, include_terms, exclude_terms)
+            inc_hits = [t for t in include_terms if t in text]
+            exc_hits = [t for t in exclude_terms if t in text]
+            passes_include = (not include_terms) or bool(inc_hits)
+
+            for t in inc_hits:
+                inc_stats[t]["matches"] += 1
+                if keep:
+                    inc_stats[t]["in_final"] += 1
+            if keep and len(inc_hits) == 1:
+                inc_stats[inc_hits[0]]["only_reason_kept"] += 1
+
+            for t in exc_hits:
+                exc_stats[t]["matches"] += 1
+                if passes_include:
+                    exc_stats[t]["excluded"] += 1
+            if passes_include and len(exc_hits) == 1:
+                exc_stats[exc_hits[0]]["only_reason_excluded"] += 1
+
+            if not passes_include:
+                removed_no_include += 1
+            elif exc_hits:
+                removed_by_exclude += 1
 
         if keep:
             filtered.append(record_xml)
+
+    if mode == "advanced":
+        term_stats = {"query_terms": adv_stats}
+    else:
+        term_stats = {
+            "inclusion_terms": inc_stats,
+            "exclusion_terms": exc_stats,
+            "removed_no_inclusion_term": removed_no_include,
+            "removed_by_exclusion_term": removed_by_exclude,
+        }
 
     return filtered, {
         "mode": mode,
@@ -552,10 +615,102 @@ def apply_filter_to_raw_records(records: list[str], filter_spec: dict | None) ->
         "message": "Filtering was applied after harvesting and before schema mapping.",
         "harvested_before_filtering": total_before,
         "kept_after_filtering": len(filtered),
+        "term_stats": term_stats,
         "include_terms": include_terms,
         "exclude_terms": exclude_terms,
         "query": query,
     }
+
+
+# =====================================================
+# HARVEST REPORT
+# =====================================================
+def _report_terms(labels: list[str], stats: dict) -> dict:
+    """Re-key lowercased term stats by the term as the user typed it."""
+    return {label: stats.get(label.lower(), {}) for label in labels}
+
+
+def build_harvest_report(
+    *,
+    protocol: str,
+    endpoint: str,
+    start_date,
+    end_date,
+    filter_spec: dict | None,
+    record_limit: int | None,
+    harvest_stats: dict,
+    records_downloaded: int,
+    filter_info: dict,
+) -> dict:
+    """
+    Statistics on how each filtering layer and each term shaped the result set.
+    Counts that a portal cannot report are None rather than guessed.
+    """
+    filter_spec = filter_spec or {}
+    mode = filter_spec.get("mode") or "basic"
+    term_stats = filter_info.get("term_stats") or {}
+    after_server = harvest_stats.get("after_server_side_filtering")
+    pre = harvest_stats.get("pre_download")
+
+    counts = {
+        "records_found": harvest_stats.get("records_found"),
+        "after_server_side_filtering": after_server,
+        "after_client_pre_download_filtering": pre["kept"] if pre and pre.get("applies") else None,
+        "records_downloaded": records_downloaded,
+        "after_client_post_download_filtering": filter_info.get("kept_after_filtering", records_downloaded),
+    }
+    counts["final_records"] = counts["after_client_post_download_filtering"]
+
+    notes = []
+    if record_limit and after_server is not None and after_server > records_downloaded:
+        notes.append(
+            f"Only {records_downloaded} of {after_server} server-side matches were downloaded "
+            f"because of the record limit ({record_limit}). Client-side counts refer to the "
+            f"downloaded records only."
+        )
+    if not pre or not pre.get("applies"):
+        notes.append("No client-side pre-download filter applies to this source/run.")
+    if harvest_stats.get("server_side_filter_dropped"):
+        notes.append("The portal rejected the filtered request; records were fetched unfiltered.")
+    notes.append(
+        "Client-side matching is a case-insensitive substring match on the whole raw record "
+        "(e.g. 'sea' also matches 'research')."
+    )
+
+    report = {
+        "report_type": "LTER-LIFE harvest statistics",
+        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "protocol": protocol,
+        "endpoint": endpoint,
+        "time_interval": {"from": start_date or None, "until": end_date or None},
+        "record_limit": record_limit,
+        "filtering_method": "advanced_query" if mode == "advanced" else "include_exclude",
+        "server_side_request": harvest_stats.get("server_side_request"),
+        "counts": counts,
+    }
+
+    if mode == "advanced":
+        report["advanced_query"] = filter_spec.get("query") or ""
+        report["query_terms"] = term_stats.get("query_terms", {})
+    else:
+        report["inclusion_terms"] = _report_terms(
+            filter_spec.get("include_terms") or [], term_stats.get("inclusion_terms", {})
+        )
+        report["exclusion_terms"] = _report_terms(
+            filter_spec.get("exclude_terms") or [], term_stats.get("exclusion_terms", {})
+        )
+        report["removed_no_inclusion_term"] = term_stats.get("removed_no_inclusion_term", 0)
+        report["removed_by_exclusion_term"] = term_stats.get("removed_by_exclusion_term", 0)
+
+    report["term_stat_definitions"] = {
+        "matches": "downloaded records containing the term",
+        "in_final": "final records containing the term",
+        "only_reason_kept": "final records kept only because of this inclusion term",
+        "excluded": "records removed that contain this exclusion term (and matched an inclusion term)",
+        "only_reason_excluded": "records removed only because of this exclusion term",
+    }
+    report["notes"] = notes
+    return report
 
 
 # =====================================================
@@ -715,12 +870,14 @@ def run_harvest(
     _progress_emit(progress_callback, "phase1", endpoint_msg)
     progress_messages.append(endpoint_msg)
 
+    harvest_stats: dict = {}
+
     if proto == "OAI-PMH":
         harvest_begin_msg = "Harvesting records through OAI-PMH."
         _progress_emit(progress_callback, "phase1", harvest_begin_msg)
         progress_messages.append(harvest_begin_msg)
 
-        records = harvest_oai(api, effective_limit, start_date, end_date)
+        records = harvest_oai(api, effective_limit, start_date, end_date, stats=harvest_stats)
         harvest_msg = f"Total OAI records harvested: {len(records)}"
 
     elif proto == "CSW":
@@ -731,7 +888,8 @@ def run_harvest(
         include_terms = (filter_spec or {}).get("include_terms") or []
         exclude_terms = (filter_spec or {}).get("exclude_terms") or []
         records = harvest_csw(
-            api, effective_limit, start_date, end_date, include_terms, exclude_terms
+            api, effective_limit, start_date, end_date, include_terms, exclude_terms,
+            stats=harvest_stats,
         )
         harvest_msg = f"Total CSW records harvested: {len(records)}"
 
@@ -746,6 +904,7 @@ def run_harvest(
         records = harvest_gbif(
             api, effective_limit, start_date, end_date, include_terms, exclude_terms,
             progress_cb=_harvest_progress,
+            stats=harvest_stats,
         )
         harvest_msg = f"Total GBIF records harvested: {len(records)}"
 
@@ -789,6 +948,7 @@ def run_harvest(
         records = harvest_zenodo(
             api, effective_limit, start_date, end_date, include_terms,
             progress_cb=_harvest_progress,
+            stats=harvest_stats,
         )
 
         harvest_msg = f"Total Zenodo records harvested: {len(records)}"
@@ -852,6 +1012,18 @@ def run_harvest(
         progress_messages.append(msg)
 
     filtered_records, filter_info = apply_filter_to_raw_records(records, filter_spec)
+
+    harvest_report = build_harvest_report(
+        protocol=proto,
+        endpoint=api,
+        start_date=start_date,
+        end_date=end_date,
+        filter_spec=filter_spec,
+        record_limit=effective_limit,
+        harvest_stats=harvest_stats,
+        records_downloaded=len(records),
+        filter_info=filter_info,
+    )
 
     kept_msg = f"Records kept after filtering: {len(filtered_records)}"
     _progress_emit(progress_callback, "phase2", kept_msg)
@@ -1055,6 +1227,7 @@ def run_harvest(
         "filter_info": filter_info,
         "progress_messages": progress_messages,
         "mapped_records": final_mapped_records,  # NEW: reusable for later LLM enrichment
+        "harvest_report": harvest_report,
     }
 
 # =====================================================

@@ -45,6 +45,32 @@ def _build_constraints(start_date, end_date, include_terms):
     return [And(ands)]
 
 
+def _describe_constraints(start_date, end_date, include_terms) -> str:
+    """Human-readable form of the OGC filter built by _build_constraints()."""
+    parts = []
+    terms = [t.strip() for t in (include_terms or []) if t and t.strip()]
+    if terms:
+        parts.append("(" + " OR ".join(f"csw:AnyText LIKE '%{t}%'" for t in terms) + ")")
+    if start_date:
+        parts.append(f"apiso:Modified >= '{start_date}'")
+    if end_date:
+        parts.append(f"apiso:Modified <= '{end_date}'")
+    return " AND ".join(parts) if parts else "(no filter)"
+
+
+def _count_matches(csw, constraints) -> int | None:
+    """Best-effort 'hits only' request: how many records match, without fetching them."""
+    try:
+        kwargs = dict(resulttype="hits", maxrecords=1)
+        if constraints:
+            kwargs["constraints"] = constraints
+        csw.getrecords2(**kwargs)
+        return int(csw.results.get("matches", 0))
+    except Exception as e:
+        print(f"⚠️ CSW hit count unavailable: {type(e).__name__}: {e}", flush=True)
+        return None
+
+
 def _records_as_xml(csw) -> list[str]:
     out = []
     for rec in csw.records.values():
@@ -75,7 +101,8 @@ def harvest_csw(csw_url: str,
                 start_date=None,
                 end_date=None,
                 include_terms: list[str] | None = None,
-                exclude_terms: list[str] | None = None) -> list[str]:
+                exclude_terms: list[str] | None = None,
+                stats: dict | None = None) -> list[str]:
     print(f"🗂  Harvesting CSW from {csw_url}")
     print(f"⏱ From: {start_date} | Until: {end_date}")
     print(f"🔎 Include terms: {include_terms}")
@@ -87,6 +114,14 @@ def harvest_csw(csw_url: str,
         return []
 
     constraints = _build_constraints(start_date, end_date, include_terms)
+
+    if stats is not None:
+        stats["server_side_request"] = {
+            "filter": _describe_constraints(start_date, end_date, include_terms),
+            "note": "Exclude terms and advanced queries are not sent to the portal; "
+                    "they are applied after download.",
+        }
+        stats["records_found"] = _count_matches(csw, [])
 
     # Try, in order: ISO output + constraints -> ISO output only -> defaults.
     attempts = [
@@ -101,10 +136,13 @@ def harvest_csw(csw_url: str,
     for attempt_idx, (cons, schema) in enumerate(attempts, start=1):
         records = []
         startposition = 1
+        first_page_matches = None
         try:
             for _ in range(MAX_PAGES):
                 _page(csw, cons, schema, startposition, page_size)
                 matched = int(csw.results.get("matches", 0))
+                if startposition == 1:
+                    first_page_matches = matched
                 if attempt_idx == 1 or startposition == 1:
                     print(f"  → CSW attempt {attempt_idx}: {matched} matched, "
                           f"position {startposition}", flush=True)
@@ -122,6 +160,14 @@ def harvest_csw(csw_url: str,
 
             if records or (int(csw.results.get("matches", 0)) == 0):
                 # Successful call (even if it legitimately returned nothing).
+                if stats is not None:
+                    stats["after_server_side_filtering"] = first_page_matches
+                    if attempt_idx > 1 and cons != constraints:
+                        stats["server_side_filter_dropped"] = True
+                        stats["server_side_request"]["note"] = (
+                            "The filtered CSW request failed, so the portal was queried "
+                            "WITHOUT any filter (no keywords, no date range)."
+                        )
                 break
         except Exception as e:
             print(f"⚠️ CSW attempt {attempt_idx} failed "
