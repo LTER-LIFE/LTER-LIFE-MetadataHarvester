@@ -1,8 +1,14 @@
 """Shared test helpers: recorded portal responses and a fake HTTP layer."""
 import json
+import os
 from pathlib import Path
 
 import pytest
+
+# api.py refuses to start without catalogue credentials (fail fast in production).
+# Tests never talk to Keycloak, so dummy values are enough; a real .env still wins.
+os.environ.setdefault("KEYCLOAK_CLIENT_SECRET", "test-only")
+os.environ.setdefault("KEYCLOAK_PASSWORD", "test-only")
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
