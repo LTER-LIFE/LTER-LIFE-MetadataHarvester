@@ -7,9 +7,8 @@ Contract shared by every mapper:
   - exact coverage -> value as-is, partial coverage -> value prefixed with '*'
   - nothing found -> "-"
 
-Tests marked xfail document known mapping bugs found while writing these
-tests. They are strict: once a bug is fixed the test starts passing, pytest
-reports it, and the xfail marker must be removed.
+A known but unfixed mapping bug is recorded as a strict xfail test; once the
+bug is fixed the test passes, pytest reports it, and the marker is removed.
 """
 import pytest
 
