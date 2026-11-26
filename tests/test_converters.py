@@ -107,11 +107,23 @@ def test_zenodo_plain_string_license_still_works():
     assert map_zenodo_record_to_lterlife({"license": "CC-BY-4.0"})["License"]["value"] == "CC-BY-4.0"
 
 
-@pytest.mark.xfail(strict=True, reason="list items without name/title/id are stored as str(dict)")
 def test_zenodo_values_are_not_python_dict_reprs(zenodo):
-    for field in ("Landing page", "Identifier", "Spatial coverage"):
-        for value in as_list(zenodo[field]["value"]):
+    for field, entry in zenodo.items():
+        for value in as_list(entry["value"]):
             assert "{'" not in value, (field, value)
+
+
+def test_zenodo_list_items_use_their_representative_value(zenodo):
+    assert "*Wadden Sea" in zenodo["Spatial coverage"]["value"]              # locations[].place
+    assert "*10.1111/1365-2664.12681" in zenodo["Identifier"]["value"]       # related_identifiers[].identifier
+
+
+def test_zenodo_list_item_without_representative_key_is_flattened():
+    from converters.zenodo_mapper import _flatten
+
+    assert _flatten({"dates": [{"start": "2010", "end": "2020"}]}) == {
+        "dates.start": ["2010"], "dates.end": ["2020"],
+    }
 
 
 # ---------------------------------------------------------------- GBIF (EML)

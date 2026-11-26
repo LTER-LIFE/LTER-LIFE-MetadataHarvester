@@ -92,6 +92,11 @@ ZENODO_MAPPING: Dict[str, Dict] = {
 }
 
 
+# Keys tried, in order, to pick the value that stands for a dict inside a list
+# (creators -> name, related_identifiers -> identifier, locations -> place).
+_REPRESENTATIVE_KEYS = ("name", "title", "id", "identifier", "place")
+
+
 def _flatten(data: dict, prefix="") -> Dict[str, List[str]]:
     """
     Flatten a nested Zenodo JSON record into dot-notation keys → list of string values.
@@ -119,10 +124,18 @@ def _flatten(data: dict, prefix="") -> Dict[str, List[str]]:
                 if isinstance(item, str) and item.strip():
                     out.setdefault(full_key, []).append(item.strip())
                 elif isinstance(item, dict):
-                    # For named entities, prefer "name" key as representative value
-                    name = (item.get("name") or item.get("title") or
-                            item.get("id") or str(item))
-                    out.setdefault(full_key, []).append(str(name).strip())
+                    # Named entities: use one representative value, e.g. a creator's
+                    # name, a related identifier's DOI or a location's place.
+                    name = next((item[k] for k in _REPRESENTATIVE_KEYS
+                                 if isinstance(item.get(k), (str, int, float)) and str(item[k]).strip()),
+                                None)
+                    if name is not None:
+                        out.setdefault(full_key, []).append(str(name).strip())
+                    else:
+                        # No obvious representative: keep its fields as sub-keys
+                        # instead of storing the dict's Python repr.
+                        for nk, nv in _flatten(item, prefix=full_key).items():
+                            out.setdefault(nk, []).extend(nv)
     return out
 
 
