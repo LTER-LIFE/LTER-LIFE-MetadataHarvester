@@ -98,9 +98,13 @@ def test_zenodo_reads_fields_nested_under_metadata():
     assert mapped["Keyword"]["value"] == ["k1", "k2"]
 
 
-@pytest.mark.xfail(strict=True, reason="Zenodo license is {'id': 'cc-zero'}; the mapper only looks at 'license'")
 def test_zenodo_license_is_mapped(zenodo):
-    assert zenodo["License"]["value"] != "-"
+    # The REST API nests it: "license": {"id": "cc-zero"}
+    assert zenodo["License"]["value"] == "cc-zero"
+
+
+def test_zenodo_plain_string_license_still_works():
+    assert map_zenodo_record_to_lterlife({"license": "CC-BY-4.0"})["License"]["value"] == "CC-BY-4.0"
 
 
 @pytest.mark.xfail(strict=True, reason="list items without name/title/id are stored as str(dict)")

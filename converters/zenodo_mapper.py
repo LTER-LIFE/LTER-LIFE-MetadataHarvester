@@ -69,7 +69,8 @@ ZENODO_MAPPING: Dict[str, Dict] = {
     "spatialResolutionInMeters": {"sources": [], "coverage": "none"},
     "Reference system":     {"sources": [], "coverage": "none"},
     "License": {
-        "sources": ["license"],
+        # REST API returns {"id": "cc-zero"}; older exports a plain string.
+        "sources": ["license", "license.id"],
         "coverage": "exact",
     },
     "Access rights": {
