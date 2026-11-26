@@ -170,9 +170,17 @@ def test_iso_keywords_and_bounding_box(iso):
     assert 3 < west < east < 8 and 50 < south < north < 54   # around the Wadden Sea
 
 
-@pytest.mark.xfail(strict=True, reason="every <gmd:title> is collected, including keyword-thesaurus titles")
 def test_iso_title_is_only_the_dataset_title(iso):
+    # Not "GEMET - INSPIRE themes" or the cited regulations, which are also <gmd:title>s.
     assert iso["Title"]["value"] == "V2: Drieteenstrandloper"
+
+
+def test_rivm_mapper_inherits_the_dataset_title():
+    from converters.rivm_mapper import map_rivm_record_to_lterlife
+
+    assert map_rivm_record_to_lterlife(load_text("csw_iso19139_record.xml"))["Title"]["value"] == (
+        "V2: Drieteenstrandloper"
+    )
 
 
 # ---------------------------------------------------------------- DANS (oai_dc)

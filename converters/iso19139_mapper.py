@@ -100,7 +100,7 @@ ISO19139_MAPPING: Dict[str, Dict[str, Union[List[str], str]]] = {
     "Landing page": {
         "sources": ["url", "linkage", "linkage@href"], "coverage": "partial",
     },
-    "Title": {"sources": ["title"], "coverage": "exact"},
+    "Title": {"sources": ["dataset_title"], "coverage": "exact"},
     "Description": {"sources": ["abstract"], "coverage": "exact"},
     "Identifier": {
         "sources": ["fileidentifier", "identifier", "md_identifier"], "coverage": "partial",
@@ -164,10 +164,38 @@ ISO19139_MAPPING: Dict[str, Dict[str, Union[List[str], str]]] = {
 }
 
 
+def _find_child(elem: ET.Element, name: str):
+    return next((c for c in elem if _strip_ns(c.tag).lower() == name), None)
+
+
+def _dataset_title(root: ET.Element) -> List[str]:
+    """
+    The dataset's own title: identificationInfo/*/citation/CI_Citation/title.
+
+    A record has many other <gmd:title> elements (keyword thesauri such as
+    "GEMET - INSPIRE themes", specifications in data-quality reports), so
+    the flat tag collection cannot tell them apart.
+    """
+    for info in root.iter():
+        if _strip_ns(info.tag).lower() != "identificationinfo":
+            continue
+        for ident in info:                      # MD_DataIdentification, SV_ServiceIdentification, ...
+            node = ident
+            for step in ("citation", "ci_citation", "title"):
+                node = _find_child(node, step) if node is not None else None
+            if node is not None:
+                text = "".join(node.itertext()).strip()
+                if text:
+                    return [text]
+    return []
+
+
 def _map_with(mapping: Dict[str, Dict], xml_string: str) -> Dict[str, Union[str, List[str]]]:
     try:
         root = ET.fromstring(xml_string)
         extracted = _collect_fields(root)
+        # Fall back to the old behaviour for records without a dataset citation.
+        extracted["dataset_title"] = _dataset_title(root) or extracted.get("title", [])
     except ET.ParseError:
         return {field: {"value": "-", "raw_fields": ["-"]} for field in mapping}
 
