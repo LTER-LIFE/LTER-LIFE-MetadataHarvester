@@ -82,7 +82,8 @@ GBIF_MAPPING: Dict[str, Dict[str, Union[List[str], str]]] = {
         "coverage": "partial",
     },
     "Creator": {
-        "sources": ["organizationname", "surname", "givenname"],
+        # One full name per <creator> element, built in _creator_names().
+        "sources": ["creator_name"],
         "coverage": "exact",
     },
     "Contact point": {
@@ -175,6 +176,34 @@ def _collect_fields(root: ET.Element) -> Dict[str, List[str]]:
     return fields
 
 
+def _child_text(elem: ET.Element, name: str) -> str:
+    for child in elem:
+        if _strip_ns(child.tag).lower() == name:
+            return (child.text or "").strip()
+    return ""
+
+
+def _creator_names(root: ET.Element) -> List[str]:
+    """
+    One name per EML <creator>: "givenName surName" for a person, otherwise
+    the organisation. The flat tag collection cannot do this: it mixes the
+    name parts of every person in the document (contacts, metadata providers,
+    ...) into separate values.
+    """
+    names: List[str] = []
+    for elem in root.iter():
+        if _strip_ns(elem.tag).lower() != "creator":
+            continue
+        person = next((c for c in elem if _strip_ns(c.tag).lower() == "individualname"), None)
+        name = ""
+        if person is not None:
+            name = " ".join(p for p in (_child_text(person, "givenname"), _child_text(person, "surname")) if p)
+        name = name or _child_text(elem, "organizationname") or _child_text(elem, "positionname")
+        if name and name not in names:
+            names.append(name)
+    return names
+
+
 # =====================================================
 # Public API
 # =====================================================
@@ -193,6 +222,7 @@ def map_gbif_record_to_lterlife(xml_string: str) -> Dict[str, Union[str, List[st
     try:
         root = ET.fromstring(xml_string)
         extracted = _collect_fields(root)
+        extracted["creator_name"] = _creator_names(root)
     except ET.ParseError:
         return {
             field: {"value": "-", "raw_fields": ["-"]}

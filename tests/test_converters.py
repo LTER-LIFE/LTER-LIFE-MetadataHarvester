@@ -148,9 +148,18 @@ def test_gbif_licence_pages_are_never_used_as_landing_page(gbif):
             assert "creativecommons.org" not in url and "spdx.org" not in url
 
 
-@pytest.mark.xfail(strict=True, reason="givenName and surName are collected as separate creators")
-def test_gbif_creator_names_are_not_split(gbif):
-    assert "Earl" not in gbif["Creator"]["value"]
+def test_gbif_creator_is_the_full_name_of_each_creator(gbif):
+    # Only <creator>; contacts and metadata providers are other roles.
+    assert gbif["Creator"]["value"] == "Julia A. Busch"
+
+
+def test_gbif_creator_without_person_falls_back_to_organisation():
+    eml = """<eml:eml xmlns:eml="https://eml.ecoinformatics.org/eml-2.2.0"><dataset>
+        <creator><individualName><givenName>A.</givenName><surName>One</surName></individualName></creator>
+        <creator><organizationName>Wadden Lab</organizationName></creator>
+        <contact><individualName><surName>NotACreator</surName></individualName></contact>
+    </dataset></eml:eml>"""
+    assert map_gbif_record_to_lterlife(eml)["Creator"]["value"] == ["A. One", "Wadden Lab"]
 
 
 # ---------------------------------------------------------------- ISO 19139 (CSW)
