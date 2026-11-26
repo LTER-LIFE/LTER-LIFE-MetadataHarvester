@@ -1,0 +1,359 @@
+{
+  "created": "2021-06-20T18:40:14.801040+00:00",
+  "modified": "2022-06-01T13:44:03.528569+00:00",
+  "id": 5001184,
+  "conceptrecid": "5001183",
+  "doi": "10.5061/dryad.q9c54",
+  "doi_url": "https://doi.org/10.5061/dryad.q9c54",
+  "metadata": {
+    "title": "Data from: Consensus forecasting of intertidal seagrass habitat in the Wadden Sea",
+    "doi": "10.5061/dryad.q9c54",
+    "publication_date": "2016-08-10",
+    "description": "After the dramatic eutrophication-induced decline of intertidal seagrasses in the 1970s, the Wadden Sea has shown diverging developments. In the northern Wadden Sea, seagrass beds have expanded and become denser, while in the southern Wadden Sea, only small beds with low shoot densities are found. A lack of documentation of historical distributions hampers conservation management. Yet, the recovery in the northern Wadden Sea provides opportunity to construct robust habitat suitability models to support management.\nWe tuned habitat distribution models based on 17 years of seagrass surveys in the northern Wadden Sea and high-resolution hydrodynamics and geomorphology for the entire Wadden Sea using five machine learning approaches. To obtain geographically transferable models, hyperparameters were tuned on the basis of prediction accuracy assessed by non-random, spatial cross-validation. The spatial cross-validation methodology was combined with a consensus modelling approach.\nThe predicted suitability scores correlated amongst each other and with the hold-out observations in the training area indicating that the models converged and were transferable across space. Prediction accuracy was improved by averaging the predictions of the best models.\nWe graphically examined the relationship between the consensus suitability score and independent presence-only data from outside the training area using the area-adjusted seagrass frequency per suitability class (continuous Boyce index). The Boyce index was positively correlated with the suitability score indicating the adequacy of the prediction methodology.\nWe used the plot of the continuous Boyce index against habitat suitability score to demarcate three habitat classes – unsuitable, marginal and suitable – for the entire international Wadden Sea. This information is valuable for habitat conservation and restoration management.\nDivergence between predicted suitability and actual distributions from the recent past indicates that unaccounted factors limit seagrass development in the southern Wadden Sea.\nSynthesis and applications. Our methodology and data enabled us to produce a robust and validated consensus habitat suitability model. We identified highly suitable areas where intertidal seagrass meadows may establish and persist. Our work provides scientific underpinning for effective conservation planning in a dynamic landscape and sets monitoring priorities.",
+    "access_right": "open",
+    "creators": [
+      {
+        "name": "Folmer, Eelke O.",
+        "affiliation": "Utrecht University"
+      },
+      {
+        "name": "van Beusekom, Justus E. E.",
+        "affiliation": "Alfred-Wegener-Institut Helmholtz-Zentrum für Polar- und Meeresforschung, Bremerhaven, Germany"
+      },
+      {
+        "name": "Dolch, Tobias",
+        "affiliation": "Alfred Wegener Institute for Polar and Marine Research"
+      },
+      {
+        "name": "Gräwe, Ulf",
+        "affiliation": "Leibniz Institute for Baltic Sea Research"
+      },
+      {
+        "name": "van Katwijk, Marieke M.",
+        "affiliation": "Radboud University Nijmegen"
+      },
+      {
+        "name": "Kolbe, Kerstin",
+        "affiliation": "Lower Saxony Water Management; Coastal Defence and Nature Conservation Agency (NLWKN); Am Sportplatz 23 Norden D-26506 Germany*"
+      },
+      {
+        "name": "Philippart, Catharina J. M.",
+        "affiliation": "Royal Netherlands Institute for Sea Research"
+      },
+      {
+        "name": "Philippart, Catharina J.M.",
+        "affiliation": "Utrecht University"
+      }
+    ],
+    "keywords": [
+      "habitat management",
+      "Zostera marina",
+      "Boyce index",
+      "model transferability",
+      "Zostera noltii",
+      "Habitat Distribution Model",
+      "ensemble forecasting"
+    ],
+    "related_identifiers": [
+      {
+        "identifier": "10.1111/1365-2664.12681",
+        "relation": "isCitedBy",
+        "scheme": "doi"
+      }
+    ],
+    "locations": [
+      {
+        "place": "Netherlands"
+      },
+      {
+        "place": "Denmark"
+      },
+      {
+        "place": "North Sea"
+      },
+      {
+        "place": "Wadden Sea"
+      },
+      {
+        "place": "Germany"
+      }
+    ],
+    "resource_type": {
+      "title": "Dataset",
+      "type": "dataset"
+    },
+    "license": {
+      "id": "cc-zero"
+    },
+    "communities": [
+      {
+        "id": "dryad"
+      }
+    ],
+    "relations": {
+      "version": [
+        {
+          "index": 0,
+          "is_last": true,
+          "parent": {
+            "pid_type": "recid",
+            "pid_value": "5001183"
+          }
+        }
+      ]
+    },
+    "notes": "<div class=\"o-metadata__file-usage-entry\">distance to land (geotif, epsg:3035)<div class=\"o-metadata__file-description\">used for imputing sediment</div><div class=\"o-metadata__file-name\">dland.tif<br></div></div><div class=\"o-metadata__file-usage-entry\">mean exposure time (geotif, epsg:3035)<div class=\"o-metadata__file-description\">Exposure time of the intertidal flats: mean fraction of time (between 0 and 1) that the seafloor is exposed to air.</div><div class=\"o-metadata__file-name\">exp.mean.tif<br></div></div><div class=\"o-metadata__file-usage-entry\">intertidal regions (geotif, epsg:3035)<div class=\"o-metadata__file-description\">Intertidal regions in the Wadden Sea: 1. Denmark; 2. Schleswig-Holstein; 3. Lower Saxony; 4. Netherlands</div><div class=\"o-metadata__file-name\">region.tif<br></div></div><div class=\"o-metadata__file-usage-entry\">seagrass occupation (geotif, epsg:3035)<div class=\"o-metadata__file-description\">Proportion of the 17 years that a cell was occupied. These data cover Schleswig-Holstein.</div><div class=\"o-metadata__file-name\">sg.prop.tif<br></div></div><div class=\"o-metadata__file-usage-entry\">bottom shear stress (geotif, epsg:3035)<div class=\"o-metadata__file-description\">mean bottom shear stress due to currents</div><div class=\"o-metadata__file-name\">taub.mean.tif<br></div></div><div class=\"o-metadata__file-usage-entry\">bottom shear stress Q75 (geotif, epsg:3035)<div class=\"o-metadata__file-description\">75th percentile of bottom shear stress due to currents</div><div class=\"o-metadata__file-name\">taub.Q75.tif<br></div></div><div class=\"o-metadata__file-usage-entry\">slope of seaflooor (geotif, epsg:3035)<div class=\"o-metadata__file-name\">slope.tif<br></div></div><div class=\"o-metadata__file-usage-entry\">tidal basins (geotif, epsg:3035)<div class=\"o-metadata__file-description\">39 tidal basin of the Wadden Sea. They are used to split the Schleswig-Holstein training area data for spatial cross-validation.</div><div class=\"o-metadata__file-name\">TB.tif<br></div></div><div class=\"o-metadata__file-usage-entry\">func_seagrass R script with libraries and helper functions<div class=\"o-metadata__file-name\">func_seagrass.R<br></div></div><div class=\"o-metadata__file-usage-entry\">1_impute: R script for imputation of sediment data<div class=\"o-metadata__file-name\">1_impute.R<br></div></div><div class=\"o-metadata__file-usage-entry\">2_prepare: R-script spatial subsetting and transformation<div class=\"o-metadata__file-name\">2_prepare.R<br></div></div><div class=\"o-metadata__file-usage-entry\">3_train: R-script model training<div class=\"o-metadata__file-description\">This script trains the ML algorithms on the basis of spatial and random cross-validation. It applies the caret machinery.</div><div class=\"o-metadata__file-name\">3_train.R<br></div></div><div class=\"o-metadata__file-usage-entry\">4_gop: R-script for computing goodness of prediction<div class=\"o-metadata__file-description\">Goodness of Prediction is computed for all models based on random and spatial cross-validation. The gop of the consensus model is also computed. The script outputs the predictions of the best (lowest RMSE) models and latex tables.</div><div class=\"o-metadata__file-name\">4_gop.R<br></div></div><div class=\"o-metadata__file-usage-entry\">5_ensemble: R-script for constructing the ensemble of predictions<div class=\"o-metadata__file-name\">5_ensemble.R<br></div></div><div class=\"o-metadata__file-usage-entry\">6_consensus: R script to produce the consensus predictions<div class=\"o-metadata__file-description\">This script produces the consensus predictions (weighted average and weighted prediction variance) on the basis of the ensemble of predictions. It also adds the presence only data.</div><div class=\"o-metadata__file-name\">6_consensus.R<br></div></div><div class=\"o-metadata__file-usage-entry\">7_Boyce: R script for validation with presence-only data<div class=\"o-metadata__file-description\">Area-adjusted frequency of the presence of seagrass (\"continuous Boyce index\") vs HSS (habitat suitability score) on the basis of a rolling mean.</div><div class=\"o-metadata__file-name\">7_Boyce.R<br></div></div><div class=\"o-metadata__file-usage-entry\">Presence only shapefile<div class=\"o-metadata__file-description\">A shapefile (epsg:3035) with observations/occurrences of seagrass. It is presence-only because absences are not systematically scored.</div><div class=\"o-metadata__file-name\">shapefile_presence_only.zip<br></div></div><div class=\"o-metadata__file-usage-entry\">sessionInfo<div class=\"o-metadata__file-description\">The output of the R-function sessionInfo() which shows the used versions of R and packages.</div><div class=\"o-metadata__file-name\"></div></div><div class=\"o-metadata__file-usage-entry\">Consensus habitat suitability scores (geotif; epsg:3035)<div class=\"o-metadata__file-description\">Consensus habitat suitability scores for littoral seagrass\nhabitat in the Wadden Sea.</div><div class=\"o-metadata__file-name\">WaddenSea_littoral_seagrass_habitat_consensus_score.tif<br></div></div><div class=\"o-metadata__file-usage-entry\">Spread in the habitat suitability scores (geotif; epsg:3035)<div class=\"o-metadata__file-description\">Spread in the habitat suitability scores for littoral\nseagrass habitat in the Wadden Sea.</div><div class=\"o-metadata__file-name\">WaddenSea_littoral_seagrass_habitat_ensemble_spread.tif<br></div></div><div class=\"o-metadata__file-usage-entry\">Reclassified habitat suitability scores (geotif; epsg:3035)<div class=\"o-metadata__file-description\">Reclassification (3 classes) of the consensus suitability\nscores for littoral seagrass habitat in the Wadden Sea.</div><div class=\"o-metadata__file-name\">WaddenSea_littoral_seagrass_habitat_3classes.tif<br></div></div>"
+  },
+  "title": "Data from: Consensus forecasting of intertidal seagrass habitat in the Wadden Sea",
+  "links": {
+    "self": "https://zenodo.org/api/records/5001184",
+    "self_html": "https://zenodo.org/records/5001184",
+    "preview_html": "https://zenodo.org/records/5001184?preview=1",
+    "doi": "https://doi.org/10.5061/dryad.q9c54",
+    "self_doi": "https://doi.org/10.5061/dryad.q9c54",
+    "self_doi_html": "https://zenodo.org/doi/10.5061/dryad.q9c54",
+    "reserve_doi": "https://zenodo.org/api/records/5001184/draft/pids/doi",
+    "parent": "https://zenodo.org/api/records/5001183",
+    "parent_html": "https://zenodo.org/records/5001183",
+    "self_iiif_manifest": "https://zenodo.org/api/iiif/record:5001184/manifest",
+    "self_iiif_sequence": "https://zenodo.org/api/iiif/record:5001184/sequence/default",
+    "files": "https://zenodo.org/api/records/5001184/files",
+    "media_files": "https://zenodo.org/api/records/5001184/media-files",
+    "thumbnails": {
+      "10": "https://zenodo.org/api/iiif/record:5001184:taub.mean.tif/full/%5E10,/0/default.jpg",
+      "50": "https://zenodo.org/api/iiif/record:5001184:taub.mean.tif/full/%5E50,/0/default.jpg",
+      "100": "https://zenodo.org/api/iiif/record:5001184:taub.mean.tif/full/%5E100,/0/default.jpg",
+      "250": "https://zenodo.org/api/iiif/record:5001184:taub.mean.tif/full/%5E250,/0/default.jpg",
+      "750": "https://zenodo.org/api/iiif/record:5001184:taub.mean.tif/full/%5E750,/0/default.jpg",
+      "1200": "https://zenodo.org/api/iiif/record:5001184:taub.mean.tif/full/%5E1200,/0/default.jpg"
+    },
+    "latest": "https://zenodo.org/api/records/5001184/versions/latest",
+    "latest_html": "https://zenodo.org/records/5001184/latest",
+    "versions": "https://zenodo.org/api/records/5001184/versions",
+    "draft": "https://zenodo.org/api/records/5001184/draft",
+    "access_links": "https://zenodo.org/api/records/5001184/access/links",
+    "access_grants": "https://zenodo.org/api/records/5001184/access/grants",
+    "access_users": "https://zenodo.org/api/records/5001184/access/users",
+    "access_request": "https://zenodo.org/api/records/5001184/access/request",
+    "access": "https://zenodo.org/api/records/5001184/access",
+    "communities": "https://zenodo.org/api/records/5001184/communities",
+    "communities-suggestions": "https://zenodo.org/api/records/5001184/communities-suggestions",
+    "request_deletion": "https://zenodo.org/api/records/5001184/request-deletion",
+    "file_modification": "https://zenodo.org/api/records/5001184/file-modification",
+    "quota_increase": "https://zenodo.org/api/records/5001184/quota-increase",
+    "requests": "https://zenodo.org/api/records/5001184/requests"
+  },
+  "updated": "2022-06-01T13:44:03.528569+00:00",
+  "recid": "5001184",
+  "revision": 3,
+  "files": [
+    {
+      "id": "9db50663-b911-4090-b04d-014ba0af99e7",
+      "key": "3_train.R",
+      "size": 4128,
+      "checksum": "md5:49580d19fd19eeab6a0b78f547756f4d",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/3_train.R/content"
+      }
+    },
+    {
+      "id": "0f0efd9b-bd57-414b-97b2-2994e33907d7",
+      "key": "taub.mean.tif",
+      "size": 2121152,
+      "checksum": "md5:29b54fbee14f058d09b83efb5005ebac",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/taub.mean.tif/content"
+      }
+    },
+    {
+      "id": "5181e593-e1df-4088-818b-4d36e7d8ebfc",
+      "key": "WaddenSea_littoral_seagrass_habitat_3classes.tif",
+      "size": 881775,
+      "checksum": "md5:598e66e0f6884b0ff2bdaf4ddead3353",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/WaddenSea_littoral_seagrass_habitat_3classes.tif/content"
+      }
+    },
+    {
+      "id": "17363c73-bad8-4e2a-a0af-1d96a594ed15",
+      "key": "TB.tif",
+      "size": 1006171,
+      "checksum": "md5:20eb64fb0c62f1c17b728cf280fc7fb9",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/TB.tif/content"
+      }
+    },
+    {
+      "id": "7ac01287-8665-45da-b76c-92f0c88c079c",
+      "key": "2_prepare.R",
+      "size": 1015,
+      "checksum": "md5:183378d815954ed7fa31b332087a7545",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/2_prepare.R/content"
+      }
+    },
+    {
+      "id": "53739828-b828-4d2c-b0c8-7bbea2caf031",
+      "key": "slope.tif",
+      "size": 2134659,
+      "checksum": "md5:379f3f36f8679c1840e61c0e005d5d61",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/slope.tif/content"
+      }
+    },
+    {
+      "id": "e5535022-9b58-4177-9d5b-e6cd861dc503",
+      "key": "region.tif",
+      "size": 969518,
+      "checksum": "md5:2cf4cdd81be77d81a7ef31d6a9ae23d7",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/region.tif/content"
+      }
+    },
+    {
+      "id": "9a2cd4f7-a548-45a3-9c8b-52b6f798f081",
+      "key": "sessionInfo.txt",
+      "size": 1381,
+      "checksum": "md5:0bdcb971770b10fd85a6018d825881dc",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/sessionInfo.txt/content"
+      }
+    },
+    {
+      "id": "7599a2f7-c4ad-45bb-a9b1-3274ab6fdc2a",
+      "key": "6_consensus.R",
+      "size": 2035,
+      "checksum": "md5:16d70bf6f5fb98c88543af9810849116",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/6_consensus.R/content"
+      }
+    },
+    {
+      "id": "24414f66-7f1a-4f36-92d7-51aae24ccc84",
+      "key": "7_Boyce.R",
+      "size": 3923,
+      "checksum": "md5:2d914e24f5441ea056598aa564ccc8d4",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/7_Boyce.R/content"
+      }
+    },
+    {
+      "id": "2ff10347-2155-43bf-9156-cdc77c88b995",
+      "key": "dland.tif",
+      "size": 1809000,
+      "checksum": "md5:5ade0d9e96cf52428b15f65dbc790efc",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/dland.tif/content"
+      }
+    },
+    {
+      "id": "cf47c214-7d82-4e69-a298-bf0ee3f5dbc7",
+      "key": "exp.mean.tif",
+      "size": 2137048,
+      "checksum": "md5:0b7695feabe0a69e1178f86e4e925c8b",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/exp.mean.tif/content"
+      }
+    },
+    {
+      "id": "3433ac78-b51f-4d2e-b32d-607e7fa60156",
+      "key": "4_gop.R",
+      "size": 8930,
+      "checksum": "md5:6996482266004d18f38f72f5701b341d",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/4_gop.R/content"
+      }
+    },
+    {
+      "id": "b2ee60a7-df10-44ae-9155-6a12d3c293fc",
+      "key": "func_seagrass.R",
+      "size": 514,
+      "checksum": "md5:e57a86a23eb8b53cbd3062832d24bd2c",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/func_seagrass.R/content"
+      }
+    },
+    {
+      "id": "1853f37e-04ff-4db8-8f6f-0bc320784d16",
+      "key": "WaddenSea_littoral_seagrass_habitat_ensemble_spread.tif",
+      "size": 2113631,
+      "checksum": "md5:844000475e61d43752da7be400541b6d",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/WaddenSea_littoral_seagrass_habitat_ensemble_spread.tif/content"
+      }
+    },
+    {
+      "id": "a0437c8d-30bc-4125-b1d5-616d696f972c",
+      "key": "WaddenSea_littoral_seagrass_habitat_consensus_score.tif",
+      "size": 1993707,
+      "checksum": "md5:86adc2596426e66841a552a4b6afa038",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/WaddenSea_littoral_seagrass_habitat_consensus_score.tif/content"
+      }
+    },
+    {
+      "id": "46bfad8f-4c5d-4d22-9e5d-ac390739f58f",
+      "key": "shapefile_presence_only.zip",
+      "size": 97674,
+      "checksum": "md5:47169234c7ce094e44ead0709e6a26a2",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/shapefile_presence_only.zip/content"
+      }
+    },
+    {
+      "id": "857c825b-c399-40a9-a4cc-8c263e546926",
+      "key": "1_impute.R",
+      "size": 1198,
+      "checksum": "md5:bf2f15fb0435a542c737a906bb60417d",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/1_impute.R/content"
+      }
+    },
+    {
+      "id": "4ef7c355-353e-4438-ab26-0776b53c051f",
+      "key": "5_ensemble.R",
+      "size": 2556,
+      "checksum": "md5:1c61168f3705df2f65f5bc2ffbd1992f",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/5_ensemble.R/content"
+      }
+    },
+    {
+      "id": "3cb77558-aabf-4777-8c07-2454c5c58f39",
+      "key": "sg.prop.tif",
+      "size": 871302,
+      "checksum": "md5:b635d15763822d26ae2e8449f5f17cad",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/sg.prop.tif/content"
+      }
+    },
+    {
+      "id": "c7e475f8-2472-4604-b512-2cb225fa7e3d",
+      "key": "taub.Q75.tif",
+      "size": 2110834,
+      "checksum": "md5:0c5171b3718f5bce18ff7cf93bf747f4",
+      "links": {
+        "self": "https://zenodo.org/api/records/5001184/files/taub.Q75.tif/content"
+      }
+    }
+  ],
+  "swh": null,
+  "owners": [
+    {
+      "id": "90070"
+    }
+  ],
+  "status": "published",
+  "stats": {
+    "downloads": 795,
+    "unique_downloads": 769,
+    "views": 164,
+    "unique_views": 160,
+    "version_downloads": 795,
+    "version_unique_downloads": 769,
+    "version_unique_views": 160,
+    "version_views": 164
+  },
+  "state": "done",
+  "submitted": true
+}
