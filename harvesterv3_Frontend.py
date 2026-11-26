@@ -9,15 +9,9 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 from typing import Callable, Optional
 
-from protocols.oai import harvest_oai
-from protocols.csw import harvest_csw
-from protocols.stac import harvest_stac
-from protocols.geonetwork import harvest_geonetwork
-from protocols.odata import harvest_odata
-from protocols.gbif import harvest_gbif
+from protocols.registry import HarvestRequest, get_protocol
 
 from converters.lterlife_mapper import map_record_to_lterlife
-from protocols.zenodo import harvest_zenodo
 from converters.zenodo_mapper import map_zenodo_record_to_lterlife
 from converters.gbif_mapper import map_gbif_record_to_lterlife
 from converters.rivm_mapper import map_rivm_record_to_lterlife
@@ -968,9 +962,9 @@ def run_harvest(
     # minutes and Phase 1 would look frozen. Apply a default safety cap. The
     # cap counts records that already passed the server-side keyword/date
     # pre-filter, so keywords narrow what the cap is taken from.
-    DEFAULT_REST_CAPS = {"Zenodo": 50, "GBIF": 200, "STAC": 200, "OData": 200}
-    if effective_limit is None and proto in DEFAULT_REST_CAPS:
-        effective_limit = DEFAULT_REST_CAPS[proto]
+    protocol = get_protocol(proto)
+    if effective_limit is None and protocol and protocol.default_cap:
+        effective_limit = protocol.default_cap
         cap_msg = (
             f"No record limit given for {proto}; harvesting at most "
             f"{effective_limit} records. Set 'Max records' to change this."
@@ -982,7 +976,7 @@ def run_harvest(
     # requires) that search-capable portals can pre-filter on. Exclusions and
     # NOT-parts are never sent; the client-side pass applies them.
     server_clauses = _server_clauses(filter_spec)
-    if server_clauses and proto in ("CSW", "GBIF", "Zenodo"):
+    if server_clauses and protocol and protocol.keyword_prefilter:
         pre_msg = f"Keyword pre-filter sent to the portal: {_format_clauses(server_clauses)}"
         _progress_emit(progress_callback, "phase1", pre_msg)
         progress_messages.append(pre_msg)
@@ -1013,94 +1007,7 @@ def run_harvest(
 
     harvest_stats: dict = {}
 
-    if proto == "OAI-PMH":
-        harvest_begin_msg = "Harvesting records through OAI-PMH."
-        _progress_emit(progress_callback, "phase1", harvest_begin_msg)
-        progress_messages.append(harvest_begin_msg)
-
-        records = harvest_oai(api, effective_limit, start_date, end_date, stats=harvest_stats)
-        harvest_msg = f"Total OAI records harvested: {len(records)}"
-
-    elif proto == "CSW":
-        harvest_begin_msg = "Harvesting records through CSW (ISO 19139)."
-        _progress_emit(progress_callback, "phase1", harvest_begin_msg)
-        progress_messages.append(harvest_begin_msg)
-
-        include_terms = (filter_spec or {}).get("include_terms") or []
-        exclude_terms = (filter_spec or {}).get("exclude_terms") or []
-        records = harvest_csw(
-            api, effective_limit, start_date, end_date, include_terms, exclude_terms,
-            stats=harvest_stats,
-            clauses=server_clauses,
-        )
-        harvest_msg = f"Total CSW records harvested: {len(records)}"
-
-    elif proto == "GBIF":
-        harvest_begin_msg = "Harvesting records through the GBIF REST API."
-        _progress_emit(progress_callback, "phase1", harvest_begin_msg)
-        progress_messages.append(harvest_begin_msg)
-
-        include_terms = (filter_spec or {}).get("include_terms") or []
-        exclude_terms = (filter_spec or {}).get("exclude_terms") or []
-        print(f"🔎 Keyword pre-filter passed to GBIF: {server_clauses}", flush=True)
-        records = harvest_gbif(
-            api, effective_limit, start_date, end_date, include_terms, exclude_terms,
-            progress_cb=_harvest_progress,
-            stats=harvest_stats,
-            clauses=server_clauses,
-        )
-        harvest_msg = f"Total GBIF records harvested: {len(records)}"
-
-    elif proto == "STAC":
-        harvest_begin_msg = "Harvesting records through STAC."
-        _progress_emit(progress_callback, "phase1", harvest_begin_msg)
-        progress_messages.append(harvest_begin_msg)
-
-        records = harvest_stac(api, effective_limit)
-        harvest_msg = f"Total STAC records harvested: {len(records)}"
-
-    elif proto == "GeoNetwork":
-        harvest_begin_msg = "Harvesting records through GeoNetwork API."
-        _progress_emit(progress_callback, "phase1", harvest_begin_msg)
-        progress_messages.append(harvest_begin_msg)
-
-        records = harvest_geonetwork(api, effective_limit)
-        harvest_msg = f"Total GeoNetwork records harvested: {len(records)}"
-
-    elif proto == "OData":
-        harvest_begin_msg = "Harvesting records through OData."
-        _progress_emit(progress_callback, "phase1", harvest_begin_msg)
-        progress_messages.append(harvest_begin_msg)
-
-        records = harvest_odata(api, effective_limit)
-        harvest_msg = f"Total OData records harvested: {len(records)}"
-
-
-    elif proto == "Zenodo":
-
-        harvest_begin_msg = "Harvesting records through Zenodo REST API."
-
-        _progress_emit(progress_callback, "phase1", harvest_begin_msg)
-
-        progress_messages.append(harvest_begin_msg)
-
-        include_terms = (filter_spec or {}).get("include_terms") or []
-
-        print(f"🔎 Keyword pre-filter passed to Zenodo: {server_clauses}", flush=True)
-
-        records = harvest_zenodo(
-            api, effective_limit, start_date, end_date, include_terms,
-            progress_cb=_harvest_progress,
-            stats=harvest_stats,
-            clauses=server_clauses,
-        )
-
-        harvest_msg = f"Total Zenodo records harvested: {len(records)}"
-
-
-
-
-    else:
+    if protocol is None:
         msg = "Unsupported protocol."
         print("⚠️ Unsupported protocol", flush=True)
         _progress_emit(progress_callback, "phase1", msg, "ERROR")
@@ -1110,6 +1017,26 @@ def run_harvest(
             "filter_info": {},
             "progress_messages": [msg],
         }
+
+    harvest_begin_msg = f"Harvesting records through {protocol.description}."
+    _progress_emit(progress_callback, "phase1", harvest_begin_msg)
+    progress_messages.append(harvest_begin_msg)
+
+    if protocol.keyword_prefilter:
+        print(f"🔎 Keyword pre-filter passed to {proto}: {server_clauses}", flush=True)
+
+    records = protocol.harvest(HarvestRequest(
+        api=api,
+        limit=effective_limit,
+        start_date=start_date,
+        end_date=end_date,
+        include_terms=(filter_spec or {}).get("include_terms") or [],
+        exclude_terms=(filter_spec or {}).get("exclude_terms") or [],
+        clauses=server_clauses,
+        progress_cb=_harvest_progress,
+        stats=harvest_stats,
+    ))
+    harvest_msg = f"Total {protocol.record_label} records harvested: {len(records)}"
 
     _progress_emit(progress_callback, "phase1", harvest_msg)
     progress_messages.append(harvest_msg)

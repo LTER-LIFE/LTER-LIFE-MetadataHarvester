@@ -2,12 +2,13 @@
 How run_harvest hands work to each protocol harvester: arguments, default
 record caps, keyword pre-filter and progress messages.
 
-Written before replacing the protocol if/elif chain with a registry, so the
-refactor must keep all of this identical.
+Written before the protocol if/elif chain in run_harvest was replaced by
+protocols/registry.py; the refactor had to keep every one of them passing.
 """
 import pytest
 
 import harvesterv3_Frontend as H
+from protocols.registry import PROTOCOLS
 
 # protocol -> (module, function) of the harvester it must call
 HARVESTERS = {
@@ -34,8 +35,6 @@ def calls(monkeypatch):
             recorded[_proto] = (args, kwargs)
             return []
         monkeypatch.setattr(f"{module}.{func}", fake)
-        # Until the refactor the pipeline calls its own imported reference.
-        monkeypatch.setattr(H, func, fake, raising=False)
     return recorded
 
 
@@ -121,3 +120,12 @@ def test_unknown_protocol_is_reported_not_crashed(monkeypatch, calls):
     result = harvest(monkeypatch, "FTP")
     assert result["progress_messages"] == ["Unsupported protocol."]
     assert calls == {}
+
+
+def test_every_configured_source_uses_a_registered_protocol():
+    configured = {cfg["protocol"] for cfg in H.SOURCES.values()} | {proto for proto, _ in H.KNOWN_APIS.values()}
+    assert configured <= set(PROTOCOLS), configured - set(PROTOCOLS)
+
+
+def test_every_registered_protocol_is_covered_by_these_tests():
+    assert set(PROTOCOLS) == set(HARVESTERS)
