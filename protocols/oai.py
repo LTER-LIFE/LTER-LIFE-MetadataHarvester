@@ -1,5 +1,4 @@
 from sickle import Sickle
-from datetime import datetime
 
 
 def _oai_list_size(sickle, params) -> int | None:

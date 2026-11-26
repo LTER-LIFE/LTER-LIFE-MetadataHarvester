@@ -1,0 +1,19 @@
+# Tool configuration. Runtime dependencies are pinned in requirements.txt,
+# development tools in requirements-dev.txt.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "network: talks to live external portals (deselected by default; run with -m network)",
+]
+addopts = "-m 'not network'"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+# Start with errors that are almost always real bugs (syntax errors, undefined
+# names, unused imports/variables). Style rules can be added gradually.
+select = ["E9", "F"]
