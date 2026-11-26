@@ -724,7 +724,7 @@
             </div>
 
             <div id="advanced-filter-fields" class="filter-panel" style="display:none;">
-              <label for="filter_query" style="margin-top:0;">Advanced query <span class="help"><button type="button" class="help-btn" aria-label="What is Advanced query?" aria-expanded="false" aria-describedby="help-advanced">?</button><span class="help-pop" role="tooltip" id="help-advanced">One search expression. Combine terms with <b>AND</b>, <b>OR</b>, <b>NOT</b> and parentheses, and put phrases in double quotes. Terms written next to each other must all appear. Example: <code>(wadden OR waddenzee) AND "salt marsh" NOT clinical</code>. Applied after download only; nothing is sent to the portal.</span></span></label>
+              <label for="filter_query" style="margin-top:0;">Advanced query <span class="help"><button type="button" class="help-btn" aria-label="What is Advanced query?" aria-expanded="false" aria-describedby="help-advanced">?</button><span class="help-pop" role="tooltip" id="help-advanced">One search expression. Combine terms with <b>AND</b>, <b>OR</b>, <b>NOT</b> and parentheses, and put phrases in double quotes. Terms written next to each other must all appear. Example: <code>(wadden OR waddenzee) AND "salt marsh" NOT clinical</code>. Terms every match must contain are also sent to Zenodo, GBIF and the CSW portals as a pre-filter (so AND queries search the whole catalogue, not just the first records); the full expression, including NOT, is then applied after download. OAI-PMH portals have no keyword search, so there it is applied after download only.</span></span></label>
               <textarea
                 id="filter_query"
                 name="filter_query"

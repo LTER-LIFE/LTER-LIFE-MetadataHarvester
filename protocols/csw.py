@@ -7,7 +7,9 @@
 #
 # Server-side filtering (best effort, degrades gracefully):
 #   - date range  -> apiso:Modified  >= / <=
-#   - include terms -> OR of csw:AnyText LIKE %term%
+#   - keyword clauses -> AND of (OR of csw:AnyText LIKE %term%) groups;
+#     basic include terms are one OR group, advanced queries add one
+#     group per required term
 # Exclude terms are left to the generic client-side filter in
 # harvesterv3_Frontend.apply_filter_to_raw_records().
 
@@ -25,7 +27,20 @@ PAGE_SIZE = 50
 MAX_PAGES = 200
 
 
-def _build_constraints(start_date, end_date, include_terms):
+def _resolve_clauses(include_terms, clauses) -> list[list[str]]:
+    """Conjunctive keyword clauses: [[a, b], [c]] = (a OR b) AND c.
+    Without explicit clauses, the include terms form one OR clause."""
+    if clauses is None:
+        clauses = [list(include_terms)] if include_terms else []
+    cleaned = []
+    for clause in clauses:
+        terms = [t.strip() for t in clause if t and t.strip()]
+        if terms:
+            cleaned.append(terms)
+    return cleaned
+
+
+def _build_constraints(start_date, end_date, include_terms, clauses=None):
     ands = []
 
     if start_date:
@@ -33,8 +48,7 @@ def _build_constraints(start_date, end_date, include_terms):
     if end_date:
         ands.append(PropertyIsLessThanOrEqualTo("apiso:Modified", str(end_date)))
 
-    terms = [t.strip() for t in (include_terms or []) if t and t.strip()]
-    if terms:
+    for terms in _resolve_clauses(include_terms, clauses):
         likes = [PropertyIsLike("csw:AnyText", f"%{t}%") for t in terms]
         ands.append(likes[0] if len(likes) == 1 else Or(likes))
 
@@ -45,12 +59,12 @@ def _build_constraints(start_date, end_date, include_terms):
     return [And(ands)]
 
 
-def _describe_constraints(start_date, end_date, include_terms) -> str:
+def _describe_constraints(start_date, end_date, include_terms, clauses=None) -> str:
     """Human-readable form of the OGC filter built by _build_constraints()."""
     parts = []
-    terms = [t.strip() for t in (include_terms or []) if t and t.strip()]
-    if terms:
-        parts.append("(" + " OR ".join(f"csw:AnyText LIKE '%{t}%'" for t in terms) + ")")
+    for terms in _resolve_clauses(include_terms, clauses):
+        like = [f"csw:AnyText LIKE '%{t}%'" for t in terms]
+        parts.append("(" + " OR ".join(like) + ")" if len(like) > 1 else like[0])
     if start_date:
         parts.append(f"apiso:Modified >= '{start_date}'")
     if end_date:
@@ -102,7 +116,8 @@ def harvest_csw(csw_url: str,
                 end_date=None,
                 include_terms: list[str] | None = None,
                 exclude_terms: list[str] | None = None,
-                stats: dict | None = None) -> list[str]:
+                stats: dict | None = None,
+                clauses: list[list[str]] | None = None) -> list[str]:
     print(f"🗂  Harvesting CSW from {csw_url}")
     print(f"⏱ From: {start_date} | Until: {end_date}")
     print(f"🔎 Include terms: {include_terms}")
@@ -113,13 +128,14 @@ def harvest_csw(csw_url: str,
         print(f"⚠️ Could not open CSW endpoint: {type(e).__name__}: {e}", flush=True)
         return []
 
-    constraints = _build_constraints(start_date, end_date, include_terms)
+    constraints = _build_constraints(start_date, end_date, include_terms, clauses)
 
     if stats is not None:
         stats["server_side_request"] = {
-            "filter": _describe_constraints(start_date, end_date, include_terms),
-            "note": "Exclude terms and advanced queries are not sent to the portal; "
-                    "they are applied after download.",
+            "filter": _describe_constraints(start_date, end_date, include_terms, clauses),
+            "note": "Positive keyword terms (and the date range) are sent to the portal. "
+                    "Exclude terms, NOT-parts and the exact boolean query are applied "
+                    "after download.",
         }
         stats["records_found"] = _count_matches(csw, [])
 

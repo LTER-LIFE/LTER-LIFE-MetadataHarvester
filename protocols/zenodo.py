@@ -3,31 +3,33 @@ import time
 import requests
 
 
-def _build_query(start_date=None, end_date=None, include_terms=None) -> str:
+def _build_query(start_date=None, end_date=None, include_terms=None, clauses=None) -> str:
     """
-    Builds the Zenodo search query string, combining keyword terms and an
+    Builds the Zenodo search query string from keyword clauses and an
     optional date range.
 
-    - Keyword terms are OR'd together, then AND'd with the date range.
-    - Date range uses publication_date bracket syntax as a first attempt.
-      If the printed 'total hits' diagnostic in harvest_zenodo() shows this
-      isn't actually narrowing results, that syntax needs revisiting —
-      but keyword-only filtering should work reliably regardless.
-    """
-    clauses = []
+    `clauses` is conjunctive form: [[a, b], [c]] -> ("a" OR "b") AND ("c").
+    Without it, `include_terms` is a single OR clause. The clauses are a
+    pre-filter only (positive terms); exclusions and the exact boolean query
+    are applied client-side afterwards.
 
-    if include_terms:
-        cleaned = [t.strip() for t in include_terms if t and t.strip()]
+    Date range uses publication_date bracket syntax (verified to narrow hits).
+    """
+    if clauses is None:
+        clauses = [list(include_terms)] if include_terms else []
+
+    parts = []
+    for clause in clauses:
+        cleaned = [t.strip().replace('"', "") for t in clause if t and t.strip()]
         if cleaned:
-            term_clause = " OR ".join(f'"{t}"' for t in cleaned)
-            clauses.append(f"({term_clause})")
+            parts.append("(" + " OR ".join(f'"{t}"' for t in cleaned) + ")")
 
     if start_date or end_date:
         lo = start_date or "*"
         hi = end_date or "*"
-        clauses.append(f"publication_date:[{lo} TO {hi}]")
+        parts.append(f"publication_date:[{lo} TO {hi}]")
 
-    return " AND ".join(clauses)
+    return " AND ".join(parts)
 
 
 def _count_all_records(api_url: str, headers: dict) -> int | None:
@@ -45,7 +47,8 @@ def harvest_zenodo(api_url: str, max_records: int = None,
                     start_date=None, end_date=None,
                     include_terms: list[str] | None = None,
                     progress_cb=None,
-                    stats: dict | None = None) -> list[dict]:
+                    stats: dict | None = None,
+                    clauses: list[list[str]] | None = None) -> list[dict]:
     print(f"📚 Harvesting Zenodo from {api_url}")
     print(f"⏱ From: {start_date} | Until: {end_date}")
     print(f"🔎 Include terms: {include_terms}")
@@ -57,7 +60,7 @@ def harvest_zenodo(api_url: str, max_records: int = None,
             except Exception:
                 pass
 
-    query = _build_query(start_date, end_date, include_terms)
+    query = _build_query(start_date, end_date, include_terms, clauses)
     # Unauthenticated zenodo.org caps page size at 25 (400 otherwise).
     page_size = 25
     if max_records:
@@ -71,8 +74,9 @@ def harvest_zenodo(api_url: str, max_records: int = None,
     if stats is not None:
         stats["server_side_request"] = {
             "q": query or "(none)",
-            "note": "Exclude terms and advanced queries are not sent to the portal; "
-                    "they are applied after download.",
+            "note": "Positive keyword terms (and the date range) are sent to the portal. "
+                    "Exclude terms, NOT-parts and the exact boolean query are applied "
+                    "after download.",
         }
         stats["records_found"] = _count_all_records(api_url, headers)
     results = []

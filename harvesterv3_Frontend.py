@@ -3,6 +3,7 @@ import re
 import requests
 import xml.etree.ElementTree as ET
 import json
+from functools import lru_cache
 from collections import defaultdict
 from datetime import datetime, timezone
 from urllib.parse import urlparse
@@ -465,44 +466,171 @@ def _tokenize_query(query: str) -> list[str]:
     return re.findall(r'"[^"]+"|\(|\)|\bAND\b|\bOR\b|\bNOT\b|[^\s()]+', query, flags=re.I)
 
 
+class _QueryParser:
+    """
+    Recursive-descent parser for the advanced query language. Replaces the old
+    eval()-based evaluator, so user input is never executed as code.
+
+    Grammar (precedence NOT > AND > OR; adjacent terms mean AND):
+        or_expr  := and_expr ( OR and_expr )*
+        and_expr := not_expr ( [AND] not_expr )*
+        not_expr := NOT not_expr | primary
+        primary  := "(" or_expr ")" | term
+    AST nodes: ("term", t) | ("not", n) | ("and", a, b) | ("or", a, b)
+    """
+
+    def __init__(self, tokens: list[str]):
+        self.tokens = tokens
+        self.pos = 0
+
+    def _peek(self):
+        return self.tokens[self.pos] if self.pos < len(self.tokens) else None
+
+    def parse(self):
+        node = self._or()
+        if self._peek() is not None:
+            raise ValueError(f"unexpected {self._peek()!r}")
+        return node
+
+    def _or(self):
+        left = self._and()
+        while self._peek() is not None and self._peek().upper() == "OR":
+            self.pos += 1
+            left = ("or", left, self._and())
+        return left
+
+    def _and(self):
+        left = self._not()
+        while True:
+            tok = self._peek()
+            if tok is None or tok == ")" or tok.upper() == "OR":
+                break
+            if tok.upper() == "AND":
+                self.pos += 1
+            left = ("and", left, self._not())  # explicit AND, or implicit between adjacent terms
+        return left
+
+    def _not(self):
+        tok = self._peek()
+        if tok is None:
+            raise ValueError("query ends unexpectedly")
+        if tok.upper() == "NOT":
+            self.pos += 1
+            return ("not", self._not())
+        return self._primary()
+
+    def _primary(self):
+        tok = self._peek()
+        if tok is None:
+            raise ValueError("query ends unexpectedly")
+        if tok == "(":
+            self.pos += 1
+            node = self._or()
+            if self._peek() != ")":
+                raise ValueError("missing closing parenthesis")
+            self.pos += 1
+            return node
+        if tok == ")" or tok.upper() in ("AND", "OR"):
+            raise ValueError(f"unexpected {tok!r}")
+        self.pos += 1
+        term = tok.strip('"').strip().lower()
+        if not term:
+            raise ValueError("empty search term")
+        return ("term", term)
+
+
+@lru_cache(maxsize=128)
+def _parse_advanced_query(query: str):
+    """AST of the query, None for an empty query, or ("error", message) if it is invalid."""
+    tokens = _tokenize_query(query or "")
+    if not tokens:
+        return None
+    try:
+        return _QueryParser(tokens).parse()
+    except ValueError as e:
+        print(f"⚠️ Invalid advanced query ({e}); no records will be filtered. Query={query!r}", flush=True)
+        return ("error", str(e))
+
+
+def _eval_query(node, text: str) -> bool:
+    kind = node[0]
+    if kind == "term":
+        return node[1] in text
+    if kind == "not":
+        return not _eval_query(node[1], text)
+    if kind == "and":
+        return _eval_query(node[1], text) and _eval_query(node[2], text)
+    return _eval_query(node[1], text) or _eval_query(node[2], text)
+
+
 def _matches_advanced_filter_text(text: str, query: str) -> bool:
     """
-    Simple boolean evaluator over raw text.
-    Supports:
-      AND / OR / NOT / parentheses / quoted phrases
+    Boolean evaluator over raw record text.
+    Supports AND / OR / NOT / parentheses / "quoted phrases"; terms written next
+    to each other must all appear ("wadden sea" = wadden AND sea;
+    "a NOT b" = a AND NOT b). An invalid query filters nothing (warned once).
     """
-    tokens = _tokenize_query(query)
-
-    if not tokens:
+    node = _parse_advanced_query(query)
+    if node is None or node[0] == "error":
         return True
+    return _eval_query(node, text)
 
-    expr_parts = []
-    prev_is_operand = False  # previous token was a term or ")"
-    for tok in tokens:
-        upper_tok = tok.upper()
-        # Implicit AND: "wadden sea" -> wadden AND sea, "a NOT b" -> a AND NOT b.
-        if prev_is_operand and (upper_tok == "NOT" or tok == "(" or upper_tok not in ("AND", "OR", ")")):
-            expr_parts.append(" and ")
-        prev_is_operand = upper_tok not in ("AND", "OR", "NOT") and tok != "("
-        if upper_tok == "AND":
-            expr_parts.append(" and ")
-        elif upper_tok == "OR":
-            expr_parts.append(" or ")
-        elif upper_tok == "NOT":
-            expr_parts.append(" not ")
-        elif tok in ("(", ")"):
-            expr_parts.append(tok)
-        else:
-            term = tok.strip('"').lower()
-            expr_parts.append(f'("{term}" in text)')
 
-    expr = "".join(expr_parts)
+def _query_clauses(node) -> list[list[str]]:
+    """
+    Terms a record MUST contain to match, as clauses in conjunctive form:
+    [[a, b], [c]] means (a OR b) AND c. Sound over-approximation for use as a
+    server-side pre-filter: anything the query matches also passes these
+    clauses, and the exact client-side evaluation decides afterwards.
+    NOT-parts impose nothing (exclusions are never pushed to a portal).
+    """
+    kind = node[0]
+    if kind == "term":
+        return [[node[1]]]
+    if kind == "not":
+        return []
+    if kind == "and":
+        return _query_clauses(node[1]) + _query_clauses(node[2])
+    a, b = _query_clauses(node[1]), _query_clauses(node[2])
+    if not a or not b:
+        return []  # one side can match without any positive term -> no constraint
+    # a match satisfies every clause of its branch; keep the smallest clause of each.
+    return [list(dict.fromkeys(min(a, key=len) + min(b, key=len)))]
 
-    try:
-        return bool(eval(expr, {"__builtins__": {}}, {"text": text}))
-    except Exception:
-        print(f"⚠️ Invalid advanced query syntax. Query={query!r}", flush=True)
-        return True
+
+def _advanced_query_clauses(query: str) -> list[list[str]]:
+    node = _parse_advanced_query(query)
+    if node is None or node[0] == "error":
+        return []
+    out, seen = [], set()
+    for clause in _query_clauses(node):
+        key = frozenset(clause)
+        if key not in seen:
+            seen.add(key)
+            out.append(list(dict.fromkeys(clause)))
+    return out
+
+
+def _server_clauses(filter_spec: dict | None) -> list[list[str]]:
+    """
+    Keyword pre-filter to send to portals that can search (CSW, GBIF, Zenodo),
+    as (a OR b) AND (c) ... clauses. Basic mode: the include terms are one OR
+    clause. Advanced mode: the positive terms required by the query. Exclusions
+    are never sent; the client-side pass applies them.
+    """
+    spec = filter_spec or {}
+    if spec.get("mode") == "advanced":
+        query = (spec.get("query") or "").strip()
+        return _advanced_query_clauses(query) if query else []
+    include = [t.strip() for t in (spec.get("include_terms") or []) if t and t.strip()]
+    return [include] if include else []
+
+
+def _format_clauses(clauses: list[list[str]]) -> str:
+    return " AND ".join(
+        "(" + " OR ".join(f'"{t}"' for t in clause) + ")" if len(clause) > 1 else f'"{clause[0]}"'
+        for clause in clauses
+    )
 
 
 def _advanced_query_terms(query: str) -> list[str]:
@@ -832,19 +960,28 @@ def run_harvest(
     effective_limit = _resolve_effective_limit(max_records, HARD_CAP)
 
     # REST sources (Zenodo, GBIF, ...) have no natural end when the user
-    # sets neither a record limit nor keywords/dates: harvesting the whole
-    # catalogue would run for many minutes and Phase 1 would look frozen.
-    # Apply a default safety cap in that case.
+    # sets no record limit: harvesting the whole catalogue would run for many
+    # minutes and Phase 1 would look frozen. Apply a default safety cap. The
+    # cap counts records that already passed the server-side keyword/date
+    # pre-filter, so keywords narrow what the cap is taken from.
     DEFAULT_REST_CAPS = {"Zenodo": 50, "GBIF": 200, "STAC": 200, "OData": 200}
     if effective_limit is None and proto in DEFAULT_REST_CAPS:
         effective_limit = DEFAULT_REST_CAPS[proto]
         cap_msg = (
-            f"No record limit given for {proto}; applying a default cap of "
-            f"{effective_limit}. Set 'Max records', or add keywords / a date "
-            f"range, to change this."
+            f"No record limit given for {proto}; harvesting at most "
+            f"{effective_limit} records. Set 'Max records' to change this."
         )
         _progress_emit(progress_callback, "phase1", cap_msg)
         progress_messages.append(cap_msg)
+
+    # Positive keyword terms (basic include terms, or what an advanced query
+    # requires) that search-capable portals can pre-filter on. Exclusions and
+    # NOT-parts are never sent; the client-side pass applies them.
+    server_clauses = _server_clauses(filter_spec)
+    if server_clauses and proto in ("CSW", "GBIF", "Zenodo"):
+        pre_msg = f"Keyword pre-filter sent to the portal: {_format_clauses(server_clauses)}"
+        _progress_emit(progress_callback, "phase1", pre_msg)
+        progress_messages.append(pre_msg)
 
     def _harvest_progress(message: str) -> None:
         _progress_emit(progress_callback, "phase1", message)
@@ -890,6 +1027,7 @@ def run_harvest(
         records = harvest_csw(
             api, effective_limit, start_date, end_date, include_terms, exclude_terms,
             stats=harvest_stats,
+            clauses=server_clauses,
         )
         harvest_msg = f"Total CSW records harvested: {len(records)}"
 
@@ -900,11 +1038,12 @@ def run_harvest(
 
         include_terms = (filter_spec or {}).get("include_terms") or []
         exclude_terms = (filter_spec or {}).get("exclude_terms") or []
-        print(f"🔎 Include terms passed to GBIF: {include_terms}", flush=True)
+        print(f"🔎 Keyword pre-filter passed to GBIF: {server_clauses}", flush=True)
         records = harvest_gbif(
             api, effective_limit, start_date, end_date, include_terms, exclude_terms,
             progress_cb=_harvest_progress,
             stats=harvest_stats,
+            clauses=server_clauses,
         )
         harvest_msg = f"Total GBIF records harvested: {len(records)}"
 
@@ -943,12 +1082,13 @@ def run_harvest(
 
         include_terms = (filter_spec or {}).get("include_terms") or []
 
-        print(f"🔎 Include terms passed to Zenodo: {include_terms}", flush=True)
+        print(f"🔎 Keyword pre-filter passed to Zenodo: {server_clauses}", flush=True)
 
         records = harvest_zenodo(
             api, effective_limit, start_date, end_date, include_terms,
             progress_cb=_harvest_progress,
             stats=harvest_stats,
+            clauses=server_clauses,
         )
 
         harvest_msg = f"Total Zenodo records harvested: {len(records)}"
