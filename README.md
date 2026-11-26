@@ -167,8 +167,18 @@ pip install -r requirements.txt
 ### 4. Run the tests
 
 ```bash
-python tests/test_advanced_query.py
+pip install -r requirements-dev.txt
+pytest            # offline tests, using recorded portal responses in tests/fixtures/
+pytest -m network # optional: live end-to-end checks against the real portals
+ruff check .      # lint
 ```
+
+GitHub Actions runs the linter and the offline tests on Python 3.11–3.13 for every pull request.
+Tests marked `xfail` document known mapping bugs; they turn into failures once the bug is fixed,
+as a reminder to remove the marker.
+
+Harvest output (`jsonld/`, `jsonld_records.zip`) is written to the project folder and replaced by
+every run. Set `HARVESTER_OUTPUT_DIR` in `.env` to write it elsewhere.
 
 ## Configuration
 
