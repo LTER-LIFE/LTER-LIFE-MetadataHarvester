@@ -36,8 +36,9 @@ External Scientific Repositories
 
 The harvester automatically detects and interacts with supported repository interfaces, including:
 
-* **OAI-PMH**
-* **CSW** (Catalogue Service for the Web)
+* **OAI-PMH** (DANS Data Stations, Dataverse)
+* **CSW** (Catalogue Service for the Web: Datahuis Waddenzee, RIVM)
+* **GBIF** and **Zenodo** REST APIs
 * **STAC** (SpatioTemporal Asset Catalog)
 * **GeoNetwork**
 * **OData**
@@ -119,7 +120,7 @@ harvester/
 ├── harvesterv3_Frontend.py   # harvest pipeline: detect → harvest → filter → map → export
 ├── llm_harvester_client.py   # client for the optional LLM enrichment service
 │
-├── protocols/                # one module per repository interface
+├── protocols/                # one module per repository interface, plus registry.py
 │   ├── oai.py, csw.py, stac.py, geonetwork.py, odata.py
 │   └── gbif.py, zenodo.py
 │
@@ -219,6 +220,29 @@ Then open:
 ```text
 http://127.0.0.1:8000
 ```
+
+## Adding a new data source
+
+A **source** is a portal users can pick in the UI. It combines a **protocol** (how records are
+fetched) with a **mapper** (how they become LTER-LIFE fields).
+
+**The portal speaks a protocol we already support** (e.g. another CSW or OAI-PMH endpoint):
+
+1. Add an entry to `SOURCES` in `harvesterv3_Frontend.py` with its `api` URL, `protocol` and `mapper`.
+2. If its metadata needs a different mapping, add a mapper in `converters/` and register its key in
+   `_get_mapper()`.
+3. Record one real record in `tests/fixtures/` and add a converter test for it.
+
+**The portal needs a new protocol:**
+
+1. Write `protocols/<name>.py` with a `harvest_<name>(...)` function that returns raw records.
+2. Add a small adapter and a `Protocol(...)` entry to `PROTOCOLS` in `protocols/registry.py`. There
+   you declare whether the portal can pre-filter on keywords server-side and its default record cap.
+3. Add it to `HARVESTERS` in `tests/test_pipeline_dispatch.py` and test the harvester against a fake
+   HTTP layer (see `tests/test_protocols.py`).
+
+`run_harvest()` itself does not change. A test fails if a source uses a protocol that is not
+registered, or if a registered protocol has no dispatch test.
 
 ## Research Context
 
