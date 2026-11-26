@@ -7,9 +7,8 @@ Contract shared by every mapper:
   - exact coverage -> value as-is, partial coverage -> value prefixed with '*'
   - nothing found -> "-"
 
-Tests marked xfail document known mapping bugs found while writing these
-tests. They are strict: once a bug is fixed the test starts passing, pytest
-reports it, and the xfail marker must be removed.
+A known but unfixed mapping bug is recorded as a strict xfail test; once the
+bug is fixed the test passes, pytest reports it, and the marker is removed.
 """
 import pytest
 
@@ -98,16 +97,32 @@ def test_zenodo_reads_fields_nested_under_metadata():
     assert mapped["Keyword"]["value"] == ["k1", "k2"]
 
 
-@pytest.mark.xfail(strict=True, reason="Zenodo license is {'id': 'cc-zero'}; the mapper only looks at 'license'")
 def test_zenodo_license_is_mapped(zenodo):
-    assert zenodo["License"]["value"] != "-"
+    # The REST API nests it: "license": {"id": "cc-zero"}
+    assert zenodo["License"]["value"] == "cc-zero"
 
 
-@pytest.mark.xfail(strict=True, reason="list items without name/title/id are stored as str(dict)")
+def test_zenodo_plain_string_license_still_works():
+    assert map_zenodo_record_to_lterlife({"license": "CC-BY-4.0"})["License"]["value"] == "CC-BY-4.0"
+
+
 def test_zenodo_values_are_not_python_dict_reprs(zenodo):
-    for field in ("Landing page", "Identifier", "Spatial coverage"):
-        for value in as_list(zenodo[field]["value"]):
+    for field, entry in zenodo.items():
+        for value in as_list(entry["value"]):
             assert "{'" not in value, (field, value)
+
+
+def test_zenodo_list_items_use_their_representative_value(zenodo):
+    assert "*Wadden Sea" in zenodo["Spatial coverage"]["value"]              # locations[].place
+    assert "*10.1111/1365-2664.12681" in zenodo["Identifier"]["value"]       # related_identifiers[].identifier
+
+
+def test_zenodo_list_item_without_representative_key_is_flattened():
+    from converters.zenodo_mapper import _flatten
+
+    assert _flatten({"dates": [{"start": "2010", "end": "2020"}]}) == {
+        "dates.start": ["2010"], "dates.end": ["2020"],
+    }
 
 
 # ---------------------------------------------------------------- GBIF (EML)
@@ -132,9 +147,18 @@ def test_gbif_licence_pages_are_never_used_as_landing_page(gbif):
             assert "creativecommons.org" not in url and "spdx.org" not in url
 
 
-@pytest.mark.xfail(strict=True, reason="givenName and surName are collected as separate creators")
-def test_gbif_creator_names_are_not_split(gbif):
-    assert "Earl" not in gbif["Creator"]["value"]
+def test_gbif_creator_is_the_full_name_of_each_creator(gbif):
+    # Only <creator>; contacts and metadata providers are other roles.
+    assert gbif["Creator"]["value"] == "Julia A. Busch"
+
+
+def test_gbif_creator_without_person_falls_back_to_organisation():
+    eml = """<eml:eml xmlns:eml="https://eml.ecoinformatics.org/eml-2.2.0"><dataset>
+        <creator><individualName><givenName>A.</givenName><surName>One</surName></individualName></creator>
+        <creator><organizationName>Wadden Lab</organizationName></creator>
+        <contact><individualName><surName>NotACreator</surName></individualName></contact>
+    </dataset></eml:eml>"""
+    assert map_gbif_record_to_lterlife(eml)["Creator"]["value"] == ["A. One", "Wadden Lab"]
 
 
 # ---------------------------------------------------------------- ISO 19139 (CSW)
@@ -145,9 +169,17 @@ def test_iso_keywords_and_bounding_box(iso):
     assert 3 < west < east < 8 and 50 < south < north < 54   # around the Wadden Sea
 
 
-@pytest.mark.xfail(strict=True, reason="every <gmd:title> is collected, including keyword-thesaurus titles")
 def test_iso_title_is_only_the_dataset_title(iso):
+    # Not "GEMET - INSPIRE themes" or the cited regulations, which are also <gmd:title>s.
     assert iso["Title"]["value"] == "V2: Drieteenstrandloper"
+
+
+def test_rivm_mapper_inherits_the_dataset_title():
+    from converters.rivm_mapper import map_rivm_record_to_lterlife
+
+    assert map_rivm_record_to_lterlife(load_text("csw_iso19139_record.xml"))["Title"]["value"] == (
+        "V2: Drieteenstrandloper"
+    )
 
 
 # ---------------------------------------------------------------- DANS (oai_dc)

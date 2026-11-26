@@ -132,14 +132,31 @@ def harvest_gbif(search_url: str,
 
             retries = 0
             while True:
-                resp = session.get(search_url, params=params, headers=headers, timeout=30)
-                if resp.status_code == 429:
+                try:
+                    resp = session.get(search_url, params=params, headers=headers, timeout=30)
+                except requests.exceptions.RequestException as e:
+                    # Network trouble (timeout, DNS, reset): back off and retry, like Zenodo.
                     retries += 1
                     if retries > MAX_RETRIES_PER_PAGE:
-                        print("⚠️ GBIF rate-limited too many times, stopping search early.", flush=True)
+                        print(f"⚠️ GBIF search failed {MAX_RETRIES_PER_PAGE} times ({type(e).__name__}), "
+                              f"stopping this search with {len(keys)} datasets.", flush=True)
+                        _emit(f"GBIF: search stopped after repeated connection errors ({len(keys)} datasets kept).")
                         return
-                    wait = int(resp.headers.get("Retry-After", 5))
-                    print(f"⏳ GBIF 429, waiting {wait}s (retry {retries}/{MAX_RETRIES_PER_PAGE})", flush=True)
+                    wait = min(5 * retries, 30)
+                    print(f"🌐 GBIF request error ({type(e).__name__}), retrying in {wait}s "
+                          f"(attempt {retries}/{MAX_RETRIES_PER_PAGE})", flush=True)
+                    time.sleep(wait)
+                    continue
+
+                if resp.status_code == 429 or resp.status_code in (500, 502, 503, 504):
+                    retries += 1
+                    if retries > MAX_RETRIES_PER_PAGE:
+                        print(f"⚠️ GBIF returned {resp.status_code} too many times, stopping search early.",
+                              flush=True)
+                        return
+                    wait = int(resp.headers.get("Retry-After", 0)) or min(5 * retries, 30)
+                    print(f"⏳ GBIF {resp.status_code}, waiting {wait}s (retry {retries}/{MAX_RETRIES_PER_PAGE})",
+                          flush=True)
                     time.sleep(wait)
                     continue
                 resp.raise_for_status()

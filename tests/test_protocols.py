@@ -187,13 +187,32 @@ def test_gbif_waits_retry_after_on_rate_limit(monkeypatch, no_sleep):
     assert 3 in no_sleep
 
 
-@pytest.mark.xfail(strict=True, raises=requests.ConnectionError,
-                   reason="GBIF search has no handling for connection errors (Zenodo retries them)")
 def test_gbif_connection_error_does_not_crash_the_harvest(monkeypatch, no_sleep):
     session = FakeSession(search_pages={}, documents={}, fail_search_with=requests.ConnectionError("down"))
     use_session(monkeypatch, session)
 
     assert gbif.harvest_gbif(GBIF_URL) == []
+    assert len(no_sleep) == gbif.MAX_RETRIES_PER_PAGE          # backed off before giving up
+
+
+@pytest.mark.parametrize("transient", [requests.Timeout("slow"), FakeResponse(503)])
+def test_gbif_recovers_from_a_transient_failure(monkeypatch, no_sleep, transient):
+    session = FakeSession(search_pages={"": [gbif_hits("k1")]}, documents={"k1": "<eml/>"})
+    original_get = session.get
+    failures = [transient]
+
+    def flaky_get(url, params=None, **kwargs):
+        if url == GBIF_URL and (params or {}).get("limit") != 0 and failures:
+            failure = failures.pop()
+            if isinstance(failure, Exception):
+                raise failure
+            return failure
+        return original_get(url, params=params, **kwargs)
+
+    session.get = flaky_get
+    use_session(monkeypatch, session)
+
+    assert gbif.harvest_gbif(GBIF_URL) == ["<eml/>"]
 
 
 # ---------------------------------------------------------------- live portals
