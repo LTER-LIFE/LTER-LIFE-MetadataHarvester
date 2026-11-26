@@ -115,30 +115,29 @@ The web interface allows users to configure and run harvesting operations and in
 ```text
 harvester/
 │
-├── api.py
-├── harvesterv3_Frontendv1.py
-├── llm_harvester_client.py
+├── api.py                    # FastAPI app: web UI, background jobs, GeoNetwork import
+├── harvesterv3_Frontend.py   # harvest pipeline: detect → harvest → filter → map → export
+├── llm_harvester_client.py   # client for the optional LLM enrichment service
 │
-├── protocols/
-│   ├── oai.py
-│   ├── csw.py
-│   ├── stac.py
-│   ├── geonetwork.py
-│   └── odata.py
+├── protocols/                # one module per repository interface
+│   ├── oai.py, csw.py, stac.py, geonetwork.py, odata.py
+│   └── gbif.py, zenodo.py
 │
-├── converters/
-│   ├── lterlife_mapper.py
-│   ├── dc_converter.py
-│   └── schema_detector.py
+├── converters/               # source metadata → LTER-LIFE schema
+│   ├── lterlife_mapper.py, iso19139_mapper.py, dans_mapper.py
+│   ├── gbif_mapper.py, zenodo_mapper.py, rivm_mapper.py, datahuiswadden_mapper.py
+│   └── dc_converter.py, iso19115_converter.py, generic_converter.py, schema_detector.py
 │
 ├── exporters/
 │   ├── jsonld_exporter.py
 │   └── zip_utils.py
 │
-├── templates/
-├── static/
+├── tests/                    # unit tests
+├── scripts/smoke_harvest.py  # live end-to-end check against every configured source
+├── deploy/                   # systemd unit and nginx config (see DEPLOY.md)
+├── templates/, static/       # web UI
 │
-└── .env
+└── .env                      # local configuration, not committed (see .env.example)
 ```
 
 The `.env` file contains deployment-specific configuration and credentials and is **not included in the repository**.
@@ -148,8 +147,8 @@ The `.env` file contains deployment-specific configuration and credentials and i
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/nafisesoezy/harvester.git
-cd harvester
+git clone https://github.com/LTER-LIFE/LTER-LIFE-MetadataHarvester.git
+cd LTER-LIFE-MetadataHarvester
 ```
 
 ### 2. Create and activate a virtual environment
@@ -162,7 +161,13 @@ source .venv/bin/activate
 ### 3. Install dependencies
 
 ```bash
-pip install fastapi uvicorn requests jinja2 python-multipart sickle python-dotenv OWSLib pystac-client
+pip install -r requirements.txt
+```
+
+### 4. Run the tests
+
+```bash
+python tests/test_advanced_query.py
 ```
 
 ## Configuration
