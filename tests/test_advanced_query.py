@@ -2,18 +2,16 @@
 Tests for the advanced boolean query: evaluator, server-side pre-filter derivation,
 and the per-protocol query builders.
 
-Run:  .venv/bin/python tests/test_advanced_query.py     (or: pytest tests/)
+Run:  pytest tests/test_advanced_query.py
 """
-import os
 import random
-import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import pytest
 
-import harvesterv3_Frontend as H  # noqa: E402
-from protocols.csw import _describe_constraints  # noqa: E402
-from protocols.gbif import _gbif_queries  # noqa: E402
-from protocols.zenodo import _build_query  # noqa: E402
+import harvesterv3_Frontend as H
+from protocols.csw import _describe_constraints
+from protocols.gbif import _gbif_queries
+from protocols.zenodo import _build_query
 
 TEXT = H._normalize_filter_text(
     "<title>Wadden Sea bird monitoring</title> "
@@ -25,8 +23,7 @@ def matches(query: str) -> bool:
     return H._matches_advanced_filter_text(TEXT, query)
 
 
-def test_and_or_not_truth_table():
-    cases = {
+TRUTH_TABLE = {
         "wadden AND bird": True,
         "wadden AND zzzz": False,
         "zzzz AND wadden": False,
@@ -48,9 +45,12 @@ def test_and_or_not_truth_table():
         "wadden AND bird AND climate AND sea": True,
         "wadden AND bird AND climate AND zzzz": False,
         "NOT (wadden AND bird)": False,
-    }
-    for query, expected in cases.items():
-        assert matches(query) is expected, query
+}
+
+
+@pytest.mark.parametrize("query, expected", list(TRUTH_TABLE.items()))
+def test_and_or_not_truth_table(query, expected):
+    assert matches(query) is expected
 
 
 def test_precedence_not_over_and_over_or():
@@ -60,22 +60,24 @@ def test_precedence_not_over_and_over_or():
     assert matches("NOT wadden OR zzzz") is False
 
 
-def test_invalid_queries_filter_nothing():
-    for bad in ["wadden AND", "AND wadden", "wadden AND (bird", "wadden bird )", "()", "wadden OR OR bird"]:
-        assert matches(bad) is True, bad
-    assert matches("") is True
+@pytest.mark.parametrize("bad", ["", "wadden AND", "AND wadden", "wadden AND (bird", "wadden bird )", "()",
+                                 "wadden OR OR bird"])
+def test_invalid_queries_filter_nothing(bad):
+    assert matches(bad) is True
 
 
-def test_query_is_never_executed_as_code():
+@pytest.mark.parametrize("evil", [
+    '"x") or __import__("os").system("true") or ("y"',
+    "__import__('os').system('true')",
+    "().__class__.__bases__",
+    'a\\" and (1)',
+])
+def test_query_is_never_executed_as_code(evil, monkeypatch):
     # The old evaluator used eval(); these must be inert search terms.
-    evil = [
-        '"x") or __import__("os").system("true") or ("y"',
-        "__import__('os').system('true')",
-        "().__class__.__bases__",
-        'a\\" and (1)',
-    ]
-    for q in evil:
-        assert matches(q) in (True, False)  # no exception, no execution
+    called = []
+    monkeypatch.setattr("os.system", lambda *a: called.append(a) or 0)
+    assert matches(evil) in (True, False)  # no exception
+    assert called == []                    # and nothing was executed
 
 
 def test_clause_derivation():
@@ -146,10 +148,3 @@ def test_protocol_builders():
     assert _gbif_queries([["a", "b"], ["c", "d", "e"]]) == ["a", "b"]   # OR-groups -> union of searches
     assert _gbif_queries([["a", "b"], ["c"]]) == ["c"]                  # unit clause is enough
 
-
-if __name__ == "__main__":
-    tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]
-    for name, fn in tests:
-        fn()
-        print(f"ok   {name}")
-    print(f"\nall {len(tests)} tests passed")

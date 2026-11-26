@@ -8,7 +8,7 @@ def detect_schema(xml_string: str) -> str:
     """
 
     try:
-        root = ET.fromstring(xml_string)
+        ET.fromstring(xml_string)  # well-formedness check only
     except ET.ParseError:
         return "generic"
 

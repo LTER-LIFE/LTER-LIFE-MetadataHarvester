@@ -64,7 +64,7 @@ from typing import Optional, Tuple, List, Dict, Any
 
 import requests
 
-from harvesterv3_Frontend import run_harvest, enrich_and_reexport, SOURCES
+from harvesterv3_Frontend import run_harvest, enrich_and_reexport, SOURCES, OUTPUT_DIR
 from exporters.zip_utils import create_zip
 
 
@@ -120,11 +120,11 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 # =====================================================
 # Local output folders/files
 # =====================================================
-JSONLD_DIR = os.path.join(BASE_DIR, "jsonld")
-ZIP_PATH = os.path.join(BASE_DIR, "jsonld_records.zip")
+JSONLD_DIR = os.path.join(OUTPUT_DIR, "jsonld")
+ZIP_PATH = os.path.join(OUTPUT_DIR, "jsonld_records.zip")
 
-FILTERED_DIR = os.path.join(BASE_DIR, "jsonld_filtered")
-FILTERED_ZIP_PATH = os.path.join(BASE_DIR, "jsonld_records_filtered.zip")
+FILTERED_DIR = os.path.join(OUTPUT_DIR, "jsonld_filtered")
+FILTERED_ZIP_PATH = os.path.join(OUTPUT_DIR, "jsonld_records_filtered.zip")
 
 
 # =====================================================
@@ -808,9 +808,9 @@ def _run_enrich_job(job_id: str, mapped_records: list, api_key: Optional[str]) -
 @app.get("/", response_class=HTMLResponse)
 def ui_form(request: Request):
     return templates.TemplateResponse(
+        request,
         "form.html",
         {
-            "request": request,
             "filter_mode": "basic",
             "include_terms": "",
             "exclude_terms": "",

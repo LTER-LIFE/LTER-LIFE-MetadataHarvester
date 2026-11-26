@@ -29,6 +29,10 @@ from llm_harvester_client import enrich_url
 
 requests.packages.urllib3.disable_warnings()
 
+# Where harvest output (jsonld/, jsonld_records.zip) is written. Every harvest
+# replaces the previous output there. Defaults to the project folder.
+OUTPUT_DIR = os.environ.get("HARVESTER_OUTPUT_DIR") or os.path.dirname(os.path.abspath(__file__))
+
 # =====================================================
 # LLM PROVENANCE TAGGING
 # =====================================================
@@ -1343,17 +1347,16 @@ def run_harvest(
     _progress_emit(progress_callback, "phase5", "Exporting final mapped records to JSON-LD.", "RUNNING")
     progress_messages.append("Exporting final mapped records to JSON-LD.")
 
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    jsonld_dir = os.path.join(base_dir, "jsonld")
-    zip_path = os.path.join(base_dir, "jsonld_records.zip")
+    jsonld_dir = os.path.join(OUTPUT_DIR, "jsonld")
+    zip_path = os.path.join(OUTPUT_DIR, "jsonld_records.zip")
 
     export_jsonld_records(records=final_mapped_records, output_dir=jsonld_dir, context=JSONLD_CONTEXT)
-    export_jsonld_msg = f"JSON-LD records exported."
+    export_jsonld_msg = "JSON-LD records exported."
     _progress_emit(progress_callback, "phase5", export_jsonld_msg)
     progress_messages.append(export_jsonld_msg)
 
     create_zip(jsonld_dir, zip_path)
-    zip_msg = f"ZIP package created. "
+    zip_msg = "ZIP package created. "
     _progress_emit(progress_callback, "phase5", zip_msg)
     progress_messages.append(zip_msg)
 
@@ -1479,9 +1482,8 @@ def enrich_and_reexport(
             output_records.append({"separator": True})
 
     # Re-export JSON-LD + ZIP with enriched data
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    jsonld_dir = os.path.join(base_dir, "jsonld")
-    zip_path = os.path.join(base_dir, "jsonld_records.zip")
+    jsonld_dir = os.path.join(OUTPUT_DIR, "jsonld")
+    zip_path = os.path.join(OUTPUT_DIR, "jsonld_records.zip")
 
     export_jsonld_records(records=mapped_records, output_dir=jsonld_dir, context=JSONLD_CONTEXT)
     create_zip(jsonld_dir, zip_path)
